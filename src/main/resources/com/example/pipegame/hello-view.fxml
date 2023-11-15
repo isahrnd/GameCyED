@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" stylesheets="@StartStyle.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pipegame.control.Start">
+   <children>
+      <Button layoutX="217.0" layoutY="257.0" mnemonicParsing="false" onAction="#PlayButton" prefHeight="60.0" prefWidth="145.0" rotate="-6.0" text="PLAY" textFill="#e43333">
+         <font>
+            <Font name="Berlin Sans FB" size="27.0" />
+         </font>
+      </Button>
+      <Label fx:id="text" layoutX="276.0" layoutY="368.0" text="V 1.0" />
+   </children>
+</AnchorPane>
