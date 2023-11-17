@@ -11,9 +11,14 @@ public class Pipe {
     private final int y;
 
     public Pipe(int type, int x, int y) {
+        ImageView image1;
         this.x = x;
         this.y = y;
-        image = getImageView(type);
+        image1 = null;
+        if (type != -1){
+            image1 = getImageView(type);
+        }
+        image = image1;
     }
 
     private ImageView getImageView(int type){

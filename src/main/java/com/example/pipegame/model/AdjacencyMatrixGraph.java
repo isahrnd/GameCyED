@@ -46,8 +46,8 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void bfs(Vertex<T> startVertex) {
-
+    public ArrayList<Vertex<T>>  bfs(Vertex<T> startVertex) {
+        return null;
     }
 
     @Override
