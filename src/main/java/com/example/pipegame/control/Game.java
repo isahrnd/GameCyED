@@ -2,6 +2,7 @@ package com.example.pipegame.control;
 
 import com.example.pipegame.MainMenu;
 import com.example.pipegame.model.AdjacencyListGraph;
+import com.example.pipegame.model.Direction;
 import com.example.pipegame.model.Pipe;
 import com.example.pipegame.model.Vertex;
 import javafx.application.Platform;
@@ -10,6 +11,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -62,13 +64,12 @@ public class Game implements Initializable {
                 paintFountainAndDraw();
                 graphL.removeAllEdges();
             } else {
-                MainMenu.informationWindow("Sorry, the game created has no solution, please try again.");
+                MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Game without solution","Sorry, the game created has no solution, please try again.");
                 MainMenu.hideWindow((Stage)text.getScene().getWindow());
                 MainMenu.showWindow("hello-view", null);
             }
         });
     }
-
 
     private boolean hasPath() {
         ArrayList<Vertex<Pipe>> path = graphL.bfs(sourceVertex);
@@ -99,6 +100,7 @@ public class Game implements Initializable {
     }
 
     private void initializeGraph() {
+        System.out.println("free spaces:");
         graphL = new AdjacencyListGraph<>();
         for (int row = 0; row < board.getRowCount(); row++) {
             for (int col = 0; col < board.getColumnCount(); col++) {
@@ -106,6 +108,7 @@ public class Game implements Initializable {
                 if (!isBlocked) {
                     Vertex<Pipe> vertex = new Vertex<>(new Pipe(-1, row, col));
                     graphL.addVertex(vertex);
+                    System.out.println(row+" "+col);
                 } else {
                     Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
                     rectangle.setFill(Color.BLACK);
@@ -172,19 +175,25 @@ public class Game implements Initializable {
                     GridPane.getColumnIndex(node) == columnIndex &&
                     GridPane.getRowIndex(node) == rowIndex
             );
+
         }
+
         // Creamos una tubería con la imagen actual y las coordenadas
-        Pipe customObject = new Pipe(currentImageIndex, columnIndex, rowIndex);
+        Pipe customObject = new Pipe(currentImageIndex, rowIndex, columnIndex);
         // Agregamos a la lista
         pipesOnScreen.add(customObject);
+
         showImageInBoard(customObject.getImage(),columnIndex,rowIndex);
         // Incrementamos el índice para la siguiente imagen (ciclo circular)
-        currentImageIndex = (currentImageIndex % 3) + 1;
+        currentImageIndex = (currentImageIndex % 6) + 1;
         System.out.println(pipesOnScreen.size());
         System.out.println("Clic en la columna: " + columnIndex + ", Fila: " + rowIndex);
 
         //Actualizamos el grafo
         Vertex<Pipe> currentVertex = getVertexFromCell(columnIndex, rowIndex);
+        if (currentVertex != null) {
+            currentVertex.setData(customObject);
+        }
         if (previousVertex != null) {
             graphL.addEdge(previousVertex, currentVertex,1);
             System.out.println("creo arista");
@@ -223,16 +232,61 @@ public class Game implements Initializable {
         ArrayList<Vertex<Pipe>> path = graphL.dfs(sourceVertex);
         System.out.println(path.size());
         if (path.contains(drainVertex)) {
-            System.out.println("Camino válido");
+            if (validatePipeConnections(path)){
+                System.out.println("camino con conexiones valido");
+            } else {
+                System.out.println("camino conectado pero con conexiones invalidas");
+            }
         } else {
-            System.out.println("Camino inválido");
+            System.out.println("Camino no conectado");
         }
     }
 
+    private boolean validatePipeConnections(ArrayList<Vertex<Pipe>> path) {
+        for (int i = 0; i < path.size() - 1; i++) {
+            Vertex<Pipe> currentVertex = path.get(i);
+            Vertex<Pipe> nextVertex = path.get(i + 1);
+            Direction direction = getPipeDirection(currentVertex,nextVertex);
+            if (!isValidPipeConnection(currentVertex.getData(), nextVertex.getData(), direction)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Direction getPipeDirection(Vertex<Pipe> currentVertex, Vertex<Pipe> nextVertex) {
+        int currentRow = currentVertex.getData().getRow();
+        int currentCol = currentVertex.getData().getCol();
+        int nextRow = nextVertex.getData().getRow();
+        int nextCol = nextVertex.getData().getCol();
+        // Comparar las coordenadas para determinar la dirección
+        if (currentRow < nextRow) {
+            return Direction.DOWN;
+        } else if (currentRow > nextRow) {
+            return Direction.UP;
+        } else if (currentCol < nextCol) {
+            return Direction.RIGHT;
+        } else if (currentCol > nextCol) {
+            return Direction.LEFT;
+        }
+        return null;
+    }
+
+    private boolean isValidPipeConnection(Pipe currentPipe, Pipe nextPipe, Direction direction) {
+        int currentType = currentPipe.getType();
+        int nextType = nextPipe.getType();
+        if (currentType == 1) {
+            return (nextType == 1 || nextType == 3) && (direction == Direction.RIGHT || direction == Direction.LEFT);
+        } else if (currentType == 2) {
+            return (nextType == 2 || nextType == 3) && (direction == Direction.UP || direction == Direction.DOWN);
+        } else {
+            return nextType == 1 || nextType == 2 || nextType == 3;
+        }
+    }
 
     @FXML
     protected void surrenderButton() {
-        graphL.removeAllEdges();
+        deleteCurrentPipes();
         buildGraphWithoutPipes();
         ArrayList<Vertex<Pipe>> shortestPath = graphL.dijkstra(sourceVertex, drainVertex);
         highlightShortestPath(shortestPath);
@@ -317,9 +371,22 @@ public class Game implements Initializable {
 
     @FXML
     protected void resetButton() {
-        Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
-        rectangle.setFill(Color.BLACK);
-        board.add(rectangle, 0, 0);
+        deleteCurrentPipes();
+    }
+
+    private void deleteCurrentPipes(){
+        graphL.removeAllEdges();
+        for (Pipe pipe : pipesOnScreen) {
+            int columnIndex = pipe.getCol();
+            int rowIndex = pipe.getRow();
+            System.out.println(rowIndex+" "+columnIndex);
+            board.getChildren().removeIf(node -> GridPane.getColumnIndex(node) != null &&
+                    GridPane.getRowIndex(node) != null &&
+                    GridPane.getColumnIndex(node) == columnIndex &&
+                    GridPane.getRowIndex(node) == rowIndex
+            );
+        }
+        pipesOnScreen.clear();
     }
 
     @FXML

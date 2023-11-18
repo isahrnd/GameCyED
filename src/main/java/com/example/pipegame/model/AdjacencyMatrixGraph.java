@@ -21,8 +21,8 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public boolean removeVertex(Vertex<T> vertex) {
-        return false;
+    public void removeVertex(Vertex<T> vertex) {
+
     }
 
     @Override

@@ -32,8 +32,18 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public boolean removeVertex(Vertex<T> vertex) {
-        return false;
+    public void removeVertex(Vertex<T> vertex) {
+        if (!vertices.contains(vertex)) {
+            throw new IllegalArgumentException("El vértice no está en el grafo.");
+        }
+
+        // Eliminar el vértice y todas las aristas asociadas
+        vertices.remove(vertex);
+        edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getDestination().equals(vertex));
+
+        for (Vertex<T> v : vertices) {
+            v.removeNeighbor(vertex);
+        }
     }
 
     @Override
