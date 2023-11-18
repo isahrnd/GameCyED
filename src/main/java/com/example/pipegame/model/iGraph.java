@@ -4,9 +4,9 @@ import java.util.ArrayList;
 
 public interface iGraph<T> {
     void addVertex(Vertex<T> vertex);
-    void addEdge(Vertex<T> source, Vertex<T> destination);
+    void addEdge(Vertex<T> source, Vertex<T> destination, int weight);
     boolean removeVertex(Vertex<T>  vertex);
-    boolean removeEdge(Vertex<T> source, Vertex<T> destination);
+    void removeEdge(Vertex<T> source, Vertex<T> destination);
     ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex);
     ArrayList<Vertex<T>> getVertices();
     ArrayList<Vertex<T>> dfs(Vertex<T> startVertex);

@@ -16,7 +16,7 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void addEdge(Vertex<T> source, Vertex<T> destination) {
+    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
 
     }
 
@@ -26,8 +26,7 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public boolean removeEdge(Vertex<T> source, Vertex<T> destination) {
-        return false;
+    public void removeEdge(Vertex<T> source, Vertex<T> destination) {
     }
 
     @Override

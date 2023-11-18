@@ -60,6 +60,7 @@ public class Game implements Initializable {
             buildGraphWithoutPipes();
             if (hasPath()) {
                 paintFountainAndDraw();
+                graphL.removeAllEdges();
             } else {
                 MainMenu.informationWindow("Sorry, the game created has no solution, please try again.");
                 MainMenu.hideWindow((Stage)text.getScene().getWindow());
@@ -70,11 +71,7 @@ public class Game implements Initializable {
 
 
     private boolean hasPath() {
-        //System.out.println("paths:");
         ArrayList<Vertex<Pipe>> path = graphL.bfs(sourceVertex);
-       // for (Vertex<Pipe> pipe : path){
-          //  System.out.println(pipe.getData().getRow()+" "+pipe.getData().getCol());
-        //}
         return path.contains(drainVertex);
     }
 
@@ -189,7 +186,8 @@ public class Game implements Initializable {
         //Actualizamos el grafo
         Vertex<Pipe> currentVertex = getVertexFromCell(columnIndex, rowIndex);
         if (previousVertex != null) {
-            graphL.addEdge(previousVertex, currentVertex);
+            graphL.addEdge(previousVertex, currentVertex,1);
+            System.out.println("creo arista");
         }
         // Actualizar el vértice anterior
         previousVertex = currentVertex;
@@ -221,8 +219,6 @@ public class Game implements Initializable {
 
     @FXML
     protected void validateButton() {
-        Vertex<Pipe> sourceVertex = getVertexFromCell(1, 1);
-        Vertex<Pipe> drainVertex = getVertexFromCell(1, 5);
         // Validación utilizando DFS
         ArrayList<Vertex<Pipe>> path = graphL.dfs(sourceVertex);
         System.out.println(path.size());
@@ -236,24 +232,10 @@ public class Game implements Initializable {
 
     @FXML
     protected void surrenderButton() {
-        Vertex<Pipe> sourceVertex = getVertexFromCell(1, 1);
-        Vertex<Pipe> drainVertex = getVertexFromCell(1, 5);
-
-
-        // Asegúrate de que el grafo esté construido incluso si no hay tuberías
-        if (pipesOnScreen.isEmpty()) {
-            buildGraphWithoutPipes();
-        }
-
-        // Realizar la búsqueda BFS para encontrar el camino más corto
-        ArrayList<Vertex<Pipe>> shortestPath = graphL.bfs(sourceVertex);
-        System.out.println("size: "+shortestPath.size());
-        if (shortestPath.contains(drainVertex)) {
-            highlightShortestPath(shortestPath);
-
-        } else {
-            System.out.println("No hay camino válido");
-        }
+        graphL.removeAllEdges();
+        buildGraphWithoutPipes();
+        ArrayList<Vertex<Pipe>> shortestPath = graphL.dijkstra(sourceVertex, drainVertex);
+        highlightShortestPath(shortestPath);
     }
 
     private void buildGraphWithoutPipes() {
@@ -278,7 +260,7 @@ public class Game implements Initializable {
         if (row > 0) {
             Vertex<Pipe> neighbor = getVertexFromCell(col, row-1);
             if (neighbor != null){
-                graphL.addEdge(vertex, neighbor);
+                graphL.addEdge(vertex, neighbor,1);
                 System.out.println("vertice "+row+", "+col+" conectado arriba");
             }
         }
@@ -287,7 +269,7 @@ public class Game implements Initializable {
         if (row < board.getRowCount() - 1) {
             Vertex<Pipe> neighbor = getVertexFromCell(col, row+1);
             if (neighbor != null){
-                graphL.addEdge(vertex, neighbor);
+                graphL.addEdge(vertex, neighbor,1);
                 System.out.println("vertice "+row+", "+col+" conectado abajo");
             }
 
@@ -297,7 +279,7 @@ public class Game implements Initializable {
         if (col > 0) {
             Vertex<Pipe> neighbor = getVertexFromCell(col-1, row);
             if (neighbor != null){
-                graphL.addEdge(vertex, neighbor);
+                graphL.addEdge(vertex, neighbor,1);
                 System.out.println("vertice "+row+", "+col+" conectado a la izquierda");
             }
         }
@@ -306,7 +288,7 @@ public class Game implements Initializable {
         if (col < board.getColumnCount() - 1) {
             Vertex<Pipe> neighbor = getVertexFromCell(col+1, row);
             if (neighbor != null){
-                graphL.addEdge(vertex, neighbor);
+                graphL.addEdge(vertex, neighbor,1);
                 System.out.println("vertice "+row+", "+col+" conectado a la derecha");
             }
         }

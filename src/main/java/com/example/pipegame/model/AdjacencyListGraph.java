@@ -1,15 +1,15 @@
 package com.example.pipegame.model;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
 public class AdjacencyListGraph<T> implements iGraph<T> {
 
     private ArrayList<Vertex<T>> vertices;
+    private ArrayList<Edge<T>> edges;
     private int time;
 
     public AdjacencyListGraph(){
+        edges = new ArrayList<>();
         vertices = new ArrayList<>();
         time = 0;
     }
@@ -20,13 +20,15 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void addEdge(Vertex<T> source, Vertex<T> destination) {
+    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
         if (!vertices.contains(source) || !vertices.contains(destination)) {
             // Verificar si ambos vértices existen en el grafo
             throw new IllegalArgumentException("Los vértices deben estar en el grafo.");
         }
         source.addNeighbor(destination);
         destination.addNeighbor(source);
+        Edge<T> edge = new Edge<>(source, destination, weight);
+        edges.add(edge);
     }
 
     @Override
@@ -35,8 +37,17 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public boolean removeEdge(Vertex<T> source, Vertex<T> destination) {
-        return false;
+    public void removeEdge(Vertex<T> source, Vertex<T> destination) {
+        if (!vertices.contains(source) || !vertices.contains(destination)) {
+            // Verificar si ambos vértices existen en el grafo
+            throw new IllegalArgumentException("Los vértices deben estar en el grafo.");
+        }
+        source.removeNeighbor(destination);
+        destination.removeNeighbor(source);
+        Edge<T> edgeToRemove = findEdge(source, destination);
+        if (edgeToRemove != null) {
+            edges.remove(edgeToRemove);
+        }
     }
 
     @Override
@@ -114,13 +125,45 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         return bfsOrder;
     }
 
-
-
-
-
     @Override
-    public ArrayList<Vertex<T>> dijkstra(Vertex<T> startVertex, Vertex<T> endVertex) {
-        return null;
+    public ArrayList<Vertex<T>> dijkstra(Vertex<T> source, Vertex<T> drain) {
+        Map<Vertex<T>, Integer> distances = new HashMap<>();
+        Map<Vertex<T>, Vertex<T>> previousVertices = new HashMap<>();
+        Set<Vertex<T>> S = new HashSet<>();
+        PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(distances::get));
+        // Inicializar las distancias
+        for (Vertex<T> vertex : vertices) {
+            distances.put(vertex, Integer.MAX_VALUE);
+        }
+        distances.put(source, 0);
+        priorityQueue.add(source);
+
+        while (!priorityQueue.isEmpty()) {
+            Vertex<T> u = priorityQueue.poll();
+            S.add(u);
+            if (u.equals(drain)) {
+                break; // Salir del bucle si alcanzamos el vértice de drenaje
+            }
+
+            for (Edge<T> edge : getEdges(u)) {
+                Vertex<T> v = edge.getDestination();
+                int newDistance = distances.get(u) + edge.getWeight();
+                if (!S.contains(v) && newDistance < distances.get(v)) {
+                    distances.put(v, newDistance);
+                    previousVertices.put(v, u);
+                    priorityQueue.add(v);
+                }
+            }
+        }
+
+        // Reconstruir el camino desde el drenaje hasta la fuente
+        ArrayList<Vertex<T>> shortestPath = new ArrayList<>();
+        Vertex<T> currentVertex = drain;
+        while (currentVertex != null) {
+            shortestPath.add(currentVertex);
+            currentVertex = previousVertices.get(currentVertex);
+        }
+        return shortestPath;
     }
 
     @Override
@@ -136,5 +179,39 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     @Override
     public ArrayList<T> kruskal() {
         return null;
+    }
+
+    //Auxiliars
+
+    public void removeAllEdges() {
+        for (Vertex<T> vertex : vertices) {
+            removeAllEdgesFromVertex(vertex);
+        }
+    }
+
+    private void removeAllEdgesFromVertex(Vertex<T> vertex) {
+        ArrayList<Vertex<T>> neighbors = new ArrayList<>(vertex.getNeighbors());
+        for (Vertex<T> neighbor : neighbors) {
+            removeEdge(vertex, neighbor);
+        }
+    }
+
+    private Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
+        for (Edge<T> edge : edges) {
+            if (edge.getSource().equals(source) && edge.getDestination().equals(destination)) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
+    public ArrayList<Edge<T>> getEdges(Vertex<T> vertex) {
+        ArrayList<Edge<T>> vertexEdges = new ArrayList<>();
+        for (Edge<T> edge : edges) {
+            if (edge.getSource().equals(vertex) || edge.getDestination().equals(vertex)) {
+                vertexEdges.add(edge);
+            }
+        }
+        return vertexEdges;
     }
 }

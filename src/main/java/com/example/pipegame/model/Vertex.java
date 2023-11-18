@@ -48,6 +48,10 @@ public class Vertex<T> {
         neighbors.add(neighbor);
     }
 
+    public void removeNeighbor(Vertex<T> neighbor) {
+        neighbors.remove(neighbor);
+    }
+
     public T getData() {
         return data;
     }
