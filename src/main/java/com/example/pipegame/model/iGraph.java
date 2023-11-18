@@ -9,7 +9,7 @@ public interface iGraph<T> {
     boolean removeEdge(Vertex<T> source, Vertex<T> destination);
     ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex);
     ArrayList<Vertex<T>> getVertices();
-    void dfs(Vertex<T>  startVertex);
+    ArrayList<Vertex<T>> dfs(Vertex<T> startVertex);
     ArrayList<Vertex<T>> bfs(Vertex<T> startVertex);
     ArrayList<Vertex<T>> dijkstra(Vertex<T>  startVertex, Vertex<T> endVertex);
     int[][] floydWarshall();

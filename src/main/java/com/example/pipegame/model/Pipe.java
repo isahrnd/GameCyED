@@ -7,13 +7,13 @@ import javafx.scene.image.ImageView;
 public class Pipe {
 
     private final ImageView image;
-    private final int x;
-    private final int y;
+    private final int row;
+    private final int col;
 
-    public Pipe(int type, int x, int y) {
+    public Pipe(int type, int row, int col) {
         ImageView image1;
-        this.x = x;
-        this.y = y;
+        this.row = row;
+        this.col = col;
         image1 = null;
         if (type != -1){
             image1 = getImageView(type);
@@ -30,11 +30,11 @@ public class Pipe {
         return image;
     }
 
-    public int getX() {
-        return x;
+    public int getRow() {
+        return row;
     }
 
-    public int getY() {
-        return y;
+    public int getCol() {
+        return col;
     }
 }

@@ -7,9 +7,11 @@ import java.util.Queue;
 public class AdjacencyListGraph<T> implements iGraph<T> {
 
     private ArrayList<Vertex<T>> vertices;
+    private int time;
 
     public AdjacencyListGraph(){
         vertices = new ArrayList<>();
+        time = 0;
     }
 
     @Override
@@ -48,8 +50,31 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void dfs(Vertex<T> startVertex) {
+    public ArrayList<Vertex<T>> dfs(Vertex<T> startVertex) {
+        ArrayList<Vertex<T>> dfsOrder = new ArrayList<>();
+        if (vertices.size() > 0) {
+            for (Vertex<T> v : vertices) {
+                v.setColor(Color.WHITE);
+            }
+            time = 0;
+            dfs(startVertex, dfsOrder);
+        }
+        return dfsOrder;
+    }
 
+    private void dfs(Vertex<T> v, ArrayList<Vertex<T>> dfsOrder) {
+        time += 1;
+        v.setDiscoveryTime(time);
+        v.setColor(Color.GRAY);
+        dfsOrder.add(v); // Agregar el vértice al resultado de DFS
+        for (Vertex<T> u : v.getNeighbors()) {
+            if (u.getColor() == Color.WHITE) {
+                dfs(u, dfsOrder);
+            }
+        }
+        v.setColor(Color.BLACK);
+        time += 1;
+        v.setFinishTime(time);
     }
 
     @Override
@@ -88,6 +113,9 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
 
         return bfsOrder;
     }
+
+
+
 
 
     @Override

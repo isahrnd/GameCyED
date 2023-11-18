@@ -8,6 +8,8 @@ public class Vertex<T> {
     private Color color;
     private int distance;
     private Vertex<T> predecessor;
+    private int discoveryTime;
+    private int finishTime;
     private final ArrayList<Vertex<T>> neighbors;
 
     public Vertex(T data) {
@@ -16,6 +18,26 @@ public class Vertex<T> {
         this.distance = Integer.MAX_VALUE;
         this.predecessor = null;
         neighbors = new ArrayList<>();
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+    public int getDiscoveryTime() {
+        return discoveryTime;
+    }
+
+    public void setDiscoveryTime(int discoveryTime) {
+        this.discoveryTime = discoveryTime;
+    }
+
+    public int getFinishTime() {
+        return finishTime;
+    }
+
+    public void setFinishTime(int finishTime) {
+        this.finishTime = finishTime;
     }
 
     public ArrayList<Vertex<T>> getNeighbors() {
