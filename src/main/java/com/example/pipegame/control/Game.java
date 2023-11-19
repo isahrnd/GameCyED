@@ -359,14 +359,11 @@ public class Game implements Initializable {
         return true;
     }
 
-
-
     private Direction getPipeDirection(Vertex<Pipe> currentVertex, Vertex<Pipe> nextVertex) {
         int currentRow = currentVertex.getData().getRow();
         int currentCol = currentVertex.getData().getCol();
         int nextRow = nextVertex.getData().getRow();
         int nextCol = nextVertex.getData().getCol();
-        // Comparar las coordenadas para determinar la dirección
         if (currentRow < nextRow) {
             return Direction.DOWN;
         } else if (currentRow > nextRow) {
