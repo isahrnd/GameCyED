@@ -57,11 +57,6 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex) {
-        return null;
-    }
-
-    @Override
     public ArrayList<Vertex<T>> getVertices() {
         return vertices;
     }
@@ -172,21 +167,6 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         return shortestPath;
     }
 
-    @Override
-    public int[][] floydWarshall() {
-        return new int[0][];
-    }
-
-    @Override
-    public ArrayList<T> prim() {
-        return null;
-    }
-
-    @Override
-    public ArrayList<T> kruskal() {
-        return null;
-    }
-
     //Auxiliars
 
     public void removeAllEdges() {
@@ -219,5 +199,25 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
             }
         }
         return vertexEdges;
+    }
+
+    @Override
+    public int[][] floydWarshall() {
+        return new int[0][];
+    }
+
+    @Override
+    public ArrayList<T> prim() {
+        return null;
+    }
+
+    @Override
+    public ArrayList<T> kruskal() {
+        return null;
+    }
+
+    @Override
+    public ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex) {
+        return null;
     }
 }

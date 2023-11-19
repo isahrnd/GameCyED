@@ -25,7 +25,7 @@ import java.util.*;
 public class Game implements Initializable {
 
     @FXML
-    private Label text;
+    private Label vText;
     @FXML
     private GridPane board;
     @FXML
@@ -39,19 +39,25 @@ public class Game implements Initializable {
     private GraphicsContext gc;
     private Vertex<Pipe> sourceVertex;
     private Vertex<Pipe> drainVertex;
-    private AdjacencyListGraph<Pipe> graphL;
-    private final ArrayList<Pipe> pipesOnScreen = new ArrayList<>();
+    private iGraph<Pipe> graph;
     private boolean handleGridClickEnabled = true;
     private int currentImageIndex = 1;
     private boolean[][] blockedCells;
     private Image source, drain;
     private Calendar startTime;
+    public static int selectedGraphMode;
+    private final ArrayList<Pipe> pipesOnScreen = new ArrayList<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         gc = canvas.getGraphicsContext2D();
         canvas.setFocusTraversable(true);
         getSourceAndDrainImage();
+        if (selectedGraphMode == 1) {
+            graph = new AdjacencyListGraph<>();
+        } else if (selectedGraphMode == 2) {
+            graph = new AdjacencyMatrixGraph<>();
+        }
         initializeGame();
         board.setOnMouseClicked(this::handleGridClick);
     }
@@ -65,17 +71,17 @@ public class Game implements Initializable {
             if (path().contains(drainVertex)) {
                 startTime = Calendar.getInstance();
                 paintFountainAndDraw();
-                graphL.removeAllEdges();
+                graph.removeAllEdges();
             } else {
-                MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Game without solution","Sorry, the game created has no solution, please try again.");
-                MainMenu.hideWindow((Stage)text.getScene().getWindow());
+                MainMenu.showAlert(Alert.AlertType.WARNING,"Warning","Game without solution","Sorry, the generated game has no solution. Please try again.");
+                MainMenu.hideWindow((Stage)vText.getScene().getWindow());
                 MainMenu.showWindow("hello-view", null);
             }
         });
     }
 
     private ArrayList<Vertex<Pipe>> path() {
-        return graphL.bfs(sourceVertex);
+        return graph.bfs(sourceVertex);
     }
 
     private void generateBlockedCells(){
@@ -93,13 +99,12 @@ public class Game implements Initializable {
     }
 
     private void initializeGraph() {
-        graphL = new AdjacencyListGraph<>();
         for (int row = 0; row < board.getRowCount(); row++) {
             for (int col = 0; col < board.getColumnCount(); col++) {
                 boolean isBlocked = blockedCells[row][col];
                 if (!isBlocked) {
                     Vertex<Pipe> vertex = new Vertex<>(new Pipe(-1, row, col));
-                    graphL.addVertex(vertex);
+                    graph.addVertex(vertex);
                 } else {
                     Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
                     rectangle.setFill(Color.BLACK);
@@ -193,10 +198,10 @@ public class Game implements Initializable {
                 if (isVertexWithPipe) {
                     Pipe upPipe = getPipeInCell(col, row - 1);
                     if (upPipe != null) {
-                        graphL.addEdge(vertex, neighbor, 1);
+                        graph.addEdge(vertex, neighbor, 1);
                     }
                 } else {
-                    graphL.addEdge(vertex, neighbor, 1);
+                    graph.addEdge(vertex, neighbor, 1);
                 }
             }
         }
@@ -207,10 +212,10 @@ public class Game implements Initializable {
                 if (isVertexWithPipe) {
                     Pipe downPipe = getPipeInCell(col, row + 1);
                     if (downPipe != null) {
-                        graphL.addEdge(vertex, neighbor, 1);
+                        graph.addEdge(vertex, neighbor, 1);
                     }
                 } else {
-                    graphL.addEdge(vertex, neighbor, 1);
+                    graph.addEdge(vertex, neighbor, 1);
                 }
             }
         }
@@ -221,10 +226,10 @@ public class Game implements Initializable {
                 if (isVertexWithPipe) {
                     Pipe leftPipe = getPipeInCell(col - 1, row);
                     if (leftPipe != null) {
-                        graphL.addEdge(vertex, neighbor, 1);
+                        graph.addEdge(vertex, neighbor, 1);
                     }
                 } else {
-                    graphL.addEdge(vertex, neighbor, 1);
+                    graph.addEdge(vertex, neighbor, 1);
                 }
             }
         }
@@ -235,17 +240,17 @@ public class Game implements Initializable {
                 if (isVertexWithPipe) {
                     Pipe downPipe = getPipeInCell(col + 1, row);
                     if (downPipe != null) {
-                        graphL.addEdge(vertex, neighbor, 1);
+                        graph.addEdge(vertex, neighbor, 1);
                     }
                 } else {
-                    graphL.addEdge(vertex, neighbor, 1);
+                    graph.addEdge(vertex, neighbor, 1);
                 }
             }
         }
     }
 
     private Vertex<Pipe> getVertexFromCell(int columnIndex, int rowIndex) {
-        for (Vertex<Pipe> vertex : graphL.getVertices()) {
+        for (Vertex<Pipe> vertex : graph.getVertices()) {
             if (vertex.getData().getRow() == rowIndex && vertex.getData().getCol() == columnIndex) {
                 return vertex;
             }
@@ -277,8 +282,8 @@ public class Game implements Initializable {
             String msg = "Number of pipes used: " + pipesOnScreen.size();
             msg += "\nTime: " + seconds + " sec.";
             msg += "\nFinal score: " + score;
-            MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Congratulations! you won the game",msg);
-            MainMenu.hideWindow((Stage)text.getScene().getWindow());
+            MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Congratulations! You won the game",msg);
+            MainMenu.hideWindow((Stage)vText.getScene().getWindow());
             MainMenu.showWindow("hello-view", null);
         } else {
             MainMenu.showAlert(Alert.AlertType.ERROR,"Error","Your solution is not correct.",null);
@@ -383,7 +388,7 @@ public class Game implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             deleteCurrentPipes();
             buildGraphWithoutPipes();
-            ArrayList<Vertex<Pipe>> shortestPath = graphL.dijkstra(sourceVertex, drainVertex);
+            ArrayList<Vertex<Pipe>> shortestPath = graph.dijkstra(sourceVertex, drainVertex);
             highlightShortestPath(shortestPath);
             validateButton.setDisable(true);
             resetButton.setDisable(true);
@@ -419,7 +424,7 @@ public class Game implements Initializable {
     }
 
     private void deleteCurrentPipes(){
-        graphL.removeAllEdges();
+        graph.removeAllEdges();
         for (Pipe pipe : pipesOnScreen) {
             int columnIndex = pipe.getCol();
             int rowIndex = pipe.getRow();
@@ -443,7 +448,7 @@ public class Game implements Initializable {
                 : Optional.of(ButtonType.OK);
 
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            MainMenu.hideWindow((Stage) text.getScene().getWindow());
+            MainMenu.hideWindow((Stage) vText.getScene().getWindow());
             MainMenu.showWindow("hello-view", null);
         }
     }

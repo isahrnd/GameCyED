@@ -15,4 +15,5 @@ public interface iGraph<T> {
     int[][] floydWarshall();
     ArrayList<T> prim();
     ArrayList<T> kruskal();
+    void removeAllEdges();
 }

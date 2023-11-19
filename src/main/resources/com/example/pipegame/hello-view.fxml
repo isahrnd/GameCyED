@@ -11,6 +11,6 @@
             <Font name="Berlin Sans FB" size="27.0" />
          </font>
       </Button>
-      <Label fx:id="text" layoutX="276.0" layoutY="368.0" text="V 1.0" />
+      <Label fx:id="vText" layoutX="276.0" layoutY="368.0" text="V 1.0" />
    </children>
 </AnchorPane>

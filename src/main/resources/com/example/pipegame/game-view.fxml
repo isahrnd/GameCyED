@@ -10,7 +10,7 @@
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pipegame.control.Game">
    <children>
        <Canvas fx:id="canvas" height="400.0" width="600.0" />
-      <Label fx:id="text" layoutY="384.0" text=" V 1.0" />
+      <Label fx:id="vText" layoutY="384.0" text=" V 1.0" />
       <GridPane fx:id="board" gridLinesVisible="true" layoutX="47.0" layoutY="23.0">
         <columnConstraints>
           <ColumnConstraints hgrow="SOMETIMES" minWidth="35.0" prefWidth="35.0" />
