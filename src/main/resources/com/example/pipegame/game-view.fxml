@@ -40,19 +40,19 @@
             <InnerShadow />
          </effect>
       </GridPane>
-      <Button focusTraversable="false" layoutX="441.0" layoutY="207.0" mnemonicParsing="false" onAction="#surrenderButton" prefHeight="41.0" prefWidth="115.0" text="Surrender" textFill="RED">
+      <Button fx:id="giveUpButton" focusTraversable="false" layoutX="441.0" layoutY="207.0" mnemonicParsing="false" onAction="#onGiveUpButton" prefHeight="41.0" prefWidth="115.0" text="Give up" textFill="RED">
          <font>
             <Font name="Berlin Sans FB" size="20.0" />
          </font></Button>
-      <Button focusTraversable="false" layoutX="441.0" layoutY="146.0" mnemonicParsing="false" onAction="#resetButton" prefHeight="41.0" prefWidth="115.0" text="Reset" textFill="RED">
+      <Button fx:id="resetButton" focusTraversable="false" layoutX="441.0" layoutY="146.0" mnemonicParsing="false" onAction="#onResetButton" prefHeight="41.0" prefWidth="115.0" text="Reset" textFill="RED">
          <font>
             <Font name="Berlin Sans FB" size="20.0" />
          </font></Button>
-      <Button focusTraversable="false" layoutX="441.0" layoutY="269.0" mnemonicParsing="false" onAction="#menuButton" prefHeight="41.0" prefWidth="115.0" text="Menu" textFill="RED">
+      <Button focusTraversable="false" layoutX="441.0" layoutY="269.0" mnemonicParsing="false" onAction="#onMenuButton" prefHeight="41.0" prefWidth="115.0" text="Menu" textFill="RED">
          <font>
             <Font name="Berlin Sans FB" size="20.0" />
          </font></Button>
-      <Button focusTraversable="false" layoutX="441.0" layoutY="86.0" mnemonicParsing="false" onAction="#validateButton" prefHeight="41.0" prefWidth="115.0" text="Validate" textFill="RED">
+      <Button fx:id="validateButton" focusTraversable="false" layoutX="441.0" layoutY="86.0" mnemonicParsing="false" onAction="#onValidateButton" prefHeight="41.0" prefWidth="115.0" text="Validate" textFill="RED">
          <font>
             <Font name="Berlin Sans FB" size="20.0" />
          </font></Button>

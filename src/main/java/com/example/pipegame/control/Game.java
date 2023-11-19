@@ -5,10 +5,11 @@ import com.example.pipegame.model.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -19,9 +20,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class Game implements Initializable {
 
@@ -31,15 +30,22 @@ public class Game implements Initializable {
     private GridPane board;
     @FXML
     private Canvas canvas;
+    @FXML
+    private Button validateButton;
+    @FXML
+    private Button resetButton;
+    @FXML
+    private Button giveUpButton;
     private GraphicsContext gc;
-    private Vertex<Pipe> previousVertex;
     private Vertex<Pipe> sourceVertex;
     private Vertex<Pipe> drainVertex;
     private AdjacencyListGraph<Pipe> graphL;
     private final ArrayList<Pipe> pipesOnScreen = new ArrayList<>();
+    private boolean handleGridClickEnabled = true;
     private int currentImageIndex = 1;
     private boolean[][] blockedCells;
     private Image source, drain;
+    private Calendar startTime;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -52,12 +58,12 @@ public class Game implements Initializable {
 
     private void initializeGame() {
         generateBlockedCells();
-        printBlockedCells();
         Platform.runLater(() -> {
             initializeGraph();
             addSourceAndDrainVertex();
             buildGraphWithoutPipes();
-            if (hasPath()) {
+            if (path().contains(drainVertex)) {
+                startTime = Calendar.getInstance();
                 paintFountainAndDraw();
                 graphL.removeAllEdges();
             } else {
@@ -68,18 +74,8 @@ public class Game implements Initializable {
         });
     }
 
-    private boolean hasPath() {
-        ArrayList<Vertex<Pipe>> path = graphL.bfs(sourceVertex);
-        return path.contains(drainVertex);
-    }
-
-    private void printBlockedCells() {
-        for (boolean[] row : blockedCells) {
-            for (boolean cell : row) {
-                System.out.print(cell ? "X " : "O ");
-            }
-            System.out.println();
-        }
+    private ArrayList<Vertex<Pipe>> path() {
+        return graphL.bfs(sourceVertex);
     }
 
     private void generateBlockedCells(){
@@ -97,7 +93,6 @@ public class Game implements Initializable {
     }
 
     private void initializeGraph() {
-        System.out.println("free spaces:");
         graphL = new AdjacencyListGraph<>();
         for (int row = 0; row < board.getRowCount(); row++) {
             for (int col = 0; col < board.getColumnCount(); col++) {
@@ -105,7 +100,6 @@ public class Game implements Initializable {
                 if (!isBlocked) {
                     Vertex<Pipe> vertex = new Vertex<>(new Pipe(-1, row, col));
                     graphL.addVertex(vertex);
-                    System.out.println(row+" "+col);
                 } else {
                     Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
                     rectangle.setFill(Color.BLACK);
@@ -119,8 +113,6 @@ public class Game implements Initializable {
         int[] cols = generateSourceAndDrainCols();
         sourceVertex = getVertexFromCell(cols[0],0);
         drainVertex = getVertexFromCell(cols[1],9);
-        System.out.println("source: "+sourceVertex.getData().getRow()+" "+sourceVertex.getData().getCol());
-        System.out.println("fountain: "+drainVertex.getData().getRow()+" "+drainVertex.getData().getCol());
     }
 
     public void paintFountainAndDraw() {
@@ -135,14 +127,14 @@ public class Game implements Initializable {
 
     private int[] generateSourceAndDrainCols() {
         Random random = new Random();
-        int fountain_col = random.nextInt(board.getColumnCount());
-        while (isCellBlocked(0,fountain_col)){
+        int fountain_col;
+        do {
             fountain_col = random.nextInt(board.getColumnCount());
-        }
-        int drain_col = random.nextInt(board.getColumnCount());
-        while (isCellBlocked(9,drain_col)){
+        } while (isCellBlocked(0, fountain_col));
+        int drain_col;
+        do {
             drain_col = random.nextInt(board.getColumnCount());
-        }
+        } while (isCellBlocked(9, drain_col));
         return new int[]{fountain_col, drain_col};
     }
 
@@ -150,148 +142,106 @@ public class Game implements Initializable {
         return blockedCells[row][col];
     }
 
-
     private void handleGridClick(MouseEvent event) {
-        // Obtenemos las coordenadas de la celda en la que se hizo clic
-        int columnIndex = (int) (event.getX() / (board.getWidth() / board.getColumnCount()));
-        int rowIndex = (int) (event.getY() / (board.getHeight() / board.getRowCount()));
-
-        if (isCellBlocked(rowIndex, columnIndex)) {
-            System.out.println("No puedes colocar tuberías en una celda bloqueada.");
-            return;
+        if (handleGridClickEnabled){
+            int columnIndex = (int) (event.getX() / (board.getWidth() / board.getColumnCount()));
+            int rowIndex = (int) (event.getY() / (board.getHeight() / board.getRowCount()));
+            if (isCellBlocked(rowIndex, columnIndex)) {
+                return;
+            }
+            // update board
+            Pipe existingPipe = getPipeInCell(columnIndex, rowIndex);
+            if (existingPipe != null) {
+                pipesOnScreen.remove(existingPipe);
+                board.getChildren().removeIf(node -> GridPane.getColumnIndex(node) != null &&
+                        GridPane.getRowIndex(node) != null &&
+                        GridPane.getColumnIndex(node) == columnIndex &&
+                        GridPane.getRowIndex(node) == rowIndex
+                );
+            } else {
+                currentImageIndex = 1;
+            }
+            Pipe pipe = new Pipe(currentImageIndex, rowIndex, columnIndex);
+            pipesOnScreen.add(pipe);
+            showImageInBoard(pipe.getImage(),columnIndex,rowIndex);
+            currentImageIndex = (currentImageIndex % 6) + 1;
+            // update vertex
+            Vertex<Pipe> currentVertex = getVertexFromCell(columnIndex, rowIndex);
+            if (currentVertex != null) {
+                currentVertex.setData(pipe);
+            }
         }
-
-        //Actualizamos tablero
-
-        // Verificamos si ya hay un objeto en la casilla
-        Pipe existingObject = getObjectInCell(columnIndex, rowIndex);
-        if (existingObject != null) {
-            pipesOnScreen.remove(existingObject);
-            board.getChildren().removeIf(node -> GridPane.getColumnIndex(node) != null &&
-                    GridPane.getRowIndex(node) != null &&
-                    GridPane.getColumnIndex(node) == columnIndex &&
-                    GridPane.getRowIndex(node) == rowIndex
-            );
-
-        } else {
-            currentImageIndex = 1;
-        }
-
-        // Creamos una tubería con la imagen actual y las coordenadas
-        Pipe customObject = new Pipe(currentImageIndex, rowIndex, columnIndex);
-        // Agregamos a la lista
-        pipesOnScreen.add(customObject);
-
-        showImageInBoard(customObject.getImage(),columnIndex,rowIndex);
-        // Incrementamos el índice para la siguiente imagen (ciclo circular)
-        currentImageIndex = (currentImageIndex % 6) + 1;
-        System.out.println(pipesOnScreen.size());
-        System.out.println("Clic en la columna: " + columnIndex + ", Fila: " + rowIndex);
-
-        //Actualizamos el grafo
-        Vertex<Pipe> currentVertex = getVertexFromCell(columnIndex, rowIndex);
-        if (currentVertex != null) {
-            currentVertex.setData(customObject);
-        }
-        //if (previousVertex != null && areAdjacent(previousVertex, currentVertex)) {
-        //    graphL.addEdge(previousVertex, currentVertex,1);
-        //    System.out.println("creo arista");
-        //}
-        // Actualizar el vértice anterior
-        //previousVertex = currentVertex;
     }
 
     private void connectVerticesWithPipes() {
         for (Pipe pipe : pipesOnScreen){
             Vertex<Pipe> currentVertex = getVertexFromCell(pipe.getCol(), pipe.getRow());
-            connectWithNeighbors2(currentVertex);
+            if (currentVertex != null) {
+                connectWithNeighbors(currentVertex);
+            }
         }
     }
 
-    private void connectWithNeighbors2(Vertex<Pipe> vertex) {
+    private void connectWithNeighbors(Vertex<Pipe> vertex) {
         boolean isVertexWithPipe = vertex.getData().getType() != null;
         int row = vertex.getData().getRow();
         int col = vertex.getData().getCol();
-        // Conectar con el vecino superior (si existe)
+        // connect with upper neighbor
         if (row > 0) {
-            if (isVertexWithPipe){
-                Pipe upPipe = getObjectInCell(col, row - 1);
-                if (upPipe != null) {
-                    Vertex<Pipe> upVertex = getVertexFromCell(col, row - 1);
-                    graphL.addEdge(vertex, upVertex, 1);
-                }
-            } else {
-                Vertex<Pipe> neighbor = getVertexFromCell(col, row-1);
-                if (neighbor != null){
-                    graphL.addEdge(vertex, neighbor,1);
-                    System.out.println("vertice "+row+", "+col+" conectado arriba");
+            Vertex<Pipe> neighbor = getVertexFromCell(col, row - 1);
+            if (neighbor != null) {
+                if (isVertexWithPipe) {
+                    Pipe upPipe = getPipeInCell(col, row - 1);
+                    if (upPipe != null) {
+                        graphL.addEdge(vertex, neighbor, 1);
+                    }
+                } else {
+                    graphL.addEdge(vertex, neighbor, 1);
                 }
             }
         }
-
-        // Conectar con el vecino inferior (si existe)
+        // connect with lower neighbor
         if (row < board.getRowCount() - 1) {
-            if (isVertexWithPipe){
-                Pipe downPipe = getObjectInCell(col, row + 1);
-                if (downPipe != null) {
-                    Vertex<Pipe> downVertex = getVertexFromCell(col, row + 1);
-                    graphL.addEdge(vertex, downVertex, 1);
-                }
-            } else {
-                Vertex<Pipe> neighbor = getVertexFromCell(col, row+1);
-                if (neighbor != null){
-                    graphL.addEdge(vertex, neighbor,1);
-                    System.out.println("vertice "+row+", "+col+" conectado abajo");
+            Vertex<Pipe> neighbor = getVertexFromCell(col, row + 1);
+            if (neighbor != null) {
+                if (isVertexWithPipe) {
+                    Pipe downPipe = getPipeInCell(col, row + 1);
+                    if (downPipe != null) {
+                        graphL.addEdge(vertex, neighbor, 1);
+                    }
+                } else {
+                    graphL.addEdge(vertex, neighbor, 1);
                 }
             }
-
         }
-
-        // Conectar con el vecino izquierdo (si existe)
+        // connect with left neighbor
         if (col > 0) {
-            if (isVertexWithPipe){
-                Pipe leftPipe = getObjectInCell(col - 1, row);
-                if (leftPipe != null) {
-                    Vertex<Pipe> leftVertex = getVertexFromCell(col - 1, row);
-                    graphL.addEdge(vertex, leftVertex, 1);
-                }
-            } else {
-                Vertex<Pipe> neighbor = getVertexFromCell(col-1, row);
-                if (neighbor != null){
-                    graphL.addEdge(vertex, neighbor,1);
-                    System.out.println("vertice "+row+", "+col+" conectado a la izquierda");
+            Vertex<Pipe> neighbor = getVertexFromCell(col - 1, row);
+            if (neighbor != null) {
+                if (isVertexWithPipe) {
+                    Pipe leftPipe = getPipeInCell(col - 1, row);
+                    if (leftPipe != null) {
+                        graphL.addEdge(vertex, neighbor, 1);
+                    }
+                } else {
+                    graphL.addEdge(vertex, neighbor, 1);
                 }
             }
         }
-
-        // Conectar con el vecino derecho (si existe)
+        // connect with right neighbor
         if (col < board.getColumnCount() - 1) {
-            if (isVertexWithPipe){
-                Pipe downPipe = getObjectInCell(col, row + 1);
-                if (downPipe != null) {
-                    Vertex<Pipe> downVertex = getVertexFromCell(col, row + 1);
-                    graphL.addEdge(vertex, downVertex, 1);
-                }
-            } else {
-                Vertex<Pipe> neighbor = getVertexFromCell(col+1, row);
-                if (neighbor != null){
-                    graphL.addEdge(vertex, neighbor,1);
-                    System.out.println("vertice "+row+", "+col+" conectado a la derecha");
+            Vertex<Pipe> neighbor = getVertexFromCell(col + 1, row);
+            if (neighbor != null) {
+                if (isVertexWithPipe) {
+                    Pipe downPipe = getPipeInCell(col + 1, row);
+                    if (downPipe != null) {
+                        graphL.addEdge(vertex, neighbor, 1);
+                    }
+                } else {
+                    graphL.addEdge(vertex, neighbor, 1);
                 }
             }
         }
-    }
-
-
-    private boolean areAdjacent(Vertex<Pipe> vertex1, Vertex<Pipe> vertex2) {
-        // Verifica si dos vértices son adyacentes (en este caso, comparten una arista)
-        int row1 = vertex1.getData().getRow();
-        int col1 = vertex1.getData().getCol();
-        int row2 = vertex2.getData().getRow();
-        int col2 = vertex2.getData().getCol();
-
-        // Dos casillas son adyacentes si comparten una arista en el tablero
-        return Math.abs(row1 - row2) + Math.abs(col1 - col2) == 1;
     }
 
     private Vertex<Pipe> getVertexFromCell(int columnIndex, int rowIndex) {
@@ -303,10 +253,10 @@ public class Game implements Initializable {
         return null;
     }
 
-    private Pipe getObjectInCell(int columnIndex, int rowIndex) {
-        for (Pipe obj : pipesOnScreen) {
-            if (obj.getCol() == columnIndex && obj.getRow() == rowIndex) {
-                return obj;
+    private Pipe getPipeInCell(int columnIndex, int rowIndex) {
+        for (Pipe pipe : pipesOnScreen) {
+            if (pipe.getCol() == columnIndex && pipe.getRow() == rowIndex) {
+                return pipe;
             }
         }
         return null;
@@ -319,23 +269,31 @@ public class Game implements Initializable {
     }
 
     @FXML
-    protected void validateButton() {
+    protected void onValidateButton() {
+        if (validatePath()){
+            Calendar finalTime = Calendar.getInstance();
+            int seconds = calculateTime(finalTime);
+            int score = calculateScore(seconds);
+            String msg = "Number of pipes used: " + pipesOnScreen.size();
+            msg += "\nTime: " + seconds + " sec.";
+            msg += "\nFinal score: " + score;
+            MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Congratulations! you won the game",msg);
+            MainMenu.hideWindow((Stage)text.getScene().getWindow());
+            MainMenu.showWindow("hello-view", null);
+        } else {
+            MainMenu.showAlert(Alert.AlertType.ERROR,"Error","Your solution is not correct.",null);
+            deleteCurrentPipes();
+        }
+    }
+
+    private boolean validatePath(){
         if (validateSourceAndDrain()){
             connectVerticesWithPipes();
-            ArrayList<Vertex<Pipe>> path = graphL.bfs(sourceVertex);
-            System.out.println(path.size());
-            if (path.contains(drainVertex)) {
-                if (validatePipeConnections(path)){
-                    System.out.println("camino con conexiones valido");
-                } else {
-                    System.out.println("camino conectado pero con conexiones invalidas");
-                }
-            } else {
-                System.out.println("Camino no conectado");
+            if (path().contains(drainVertex)){
+                return validatePipeConnections(path());
             }
-        } else {
-            System.out.println("invalido por fuente o drenaje");
         }
+        return false;
     }
 
     private boolean validateSourceAndDrain(){
@@ -353,7 +311,7 @@ public class Game implements Initializable {
             Vertex<Pipe> nextVertex = path.get(i + 1);
             Direction direction = getPipeDirection(currentVertex,nextVertex);
             if (!isValidPipeConnection(currentVertex.getData(), nextVertex.getData(), direction)) {
-                System.out.println("invalid pipe: "+currentVertex.getData().getRow()+" "+currentVertex.getData().getCol());
+                return false;
             }
         }
         return true;
@@ -420,65 +378,27 @@ public class Game implements Initializable {
     }
 
     @FXML
-    protected void surrenderButton() {
-        deleteCurrentPipes();
-        buildGraphWithoutPipes();
-        ArrayList<Vertex<Pipe>> shortestPath = graphL.dijkstra(sourceVertex, drainVertex);
-        highlightShortestPath(shortestPath);
+    protected void onGiveUpButton() {
+        Optional<ButtonType> result = MainMenu.showAlert(Alert.AlertType.CONFIRMATION, "Confirmation", "Are you sure you want to give up?", null);
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            deleteCurrentPipes();
+            buildGraphWithoutPipes();
+            ArrayList<Vertex<Pipe>> shortestPath = graphL.dijkstra(sourceVertex, drainVertex);
+            highlightShortestPath(shortestPath);
+            validateButton.setDisable(true);
+            resetButton.setDisable(true);
+            giveUpButton.setDisable(true);
+            handleGridClickEnabled = false;
+        }
     }
 
     private void buildGraphWithoutPipes() {
-        System.out.println("Free celds:");
         for (int row = 0; row < board.getRowCount(); row++) {
             for (int col = 0; col < board.getColumnCount(); col++) {
                 Vertex<Pipe> currentVertex = getVertexFromCell(row, col);
                 if (currentVertex != null){
-                    int x = currentVertex.getData().getRow();
-                    int y = currentVertex.getData().getCol();
-                    System.out.println(x+" "+y);
                     connectWithNeighbors(currentVertex);
                 }
-            }
-        }
-    }
-
-    private void connectWithNeighbors(Vertex<Pipe> vertex) {
-        int row = vertex.getData().getRow();
-        int col = vertex.getData().getCol();
-        // Conectar con el vecino superior (si existe)
-        if (row > 0) {
-            Vertex<Pipe> neighbor = getVertexFromCell(col, row-1);
-            if (neighbor != null){
-                graphL.addEdge(vertex, neighbor,1);
-                System.out.println("vertice "+row+", "+col+" conectado arriba");
-            }
-        }
-
-        // Conectar con el vecino inferior (si existe)
-        if (row < board.getRowCount() - 1) {
-            Vertex<Pipe> neighbor = getVertexFromCell(col, row+1);
-            if (neighbor != null){
-                graphL.addEdge(vertex, neighbor,1);
-                System.out.println("vertice "+row+", "+col+" conectado abajo");
-            }
-
-        }
-
-        // Conectar con el vecino izquierdo (si existe)
-        if (col > 0) {
-            Vertex<Pipe> neighbor = getVertexFromCell(col-1, row);
-            if (neighbor != null){
-                graphL.addEdge(vertex, neighbor,1);
-                System.out.println("vertice "+row+", "+col+" conectado a la izquierda");
-            }
-        }
-
-        // Conectar con el vecino derecho (si existe)
-        if (col < board.getColumnCount() - 1) {
-            Vertex<Pipe> neighbor = getVertexFromCell(col+1, row);
-            if (neighbor != null){
-                graphL.addEdge(vertex, neighbor,1);
-                System.out.println("vertice "+row+", "+col+" conectado a la derecha");
             }
         }
     }
@@ -488,24 +408,13 @@ public class Game implements Initializable {
             int columnIndex = vertex.getData().getCol();
             int rowIndex = vertex.getData().getRow();
             Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
-            rectangle.setFill(Color.YELLOW); // Establecer el color deseado
-            // Agregar el Rectangle al GridPane en la posición específica
-           board.add(rectangle, columnIndex, rowIndex);
+            rectangle.setFill(Color.YELLOW);
+            board.add(rectangle, columnIndex, rowIndex);
         }
-    }
-
-
-    private Node getNodeFromGridPane(GridPane gridPane, int col, int row) {
-        for (Node node : gridPane.getChildren()) {
-            if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
-                return node;
-            }
-        }
-        return null;
     }
 
     @FXML
-    protected void resetButton() {
+    protected void onResetButton() {
         deleteCurrentPipes();
     }
 
@@ -519,19 +428,37 @@ public class Game implements Initializable {
                     GridPane.getColumnIndex(node) == columnIndex &&
                     GridPane.getRowIndex(node) == rowIndex
             );
+            Vertex<Pipe> currentVertex = getVertexFromCell(columnIndex, rowIndex);
+            if (currentVertex != null) {
+                currentVertex.setData(new Pipe(-1,rowIndex,columnIndex));
+            }
         }
         pipesOnScreen.clear();
     }
 
     @FXML
-    protected void menuButton() {
-        MainMenu.hideWindow((Stage)text.getScene().getWindow());
-        MainMenu.showWindow("hello-view", null);
+    protected void onMenuButton() {
+        Optional<ButtonType> result = handleGridClickEnabled
+                ? MainMenu.showAlert(Alert.AlertType.CONFIRMATION, "Confirmation", "Are you sure you want to return to the menu?", null)
+                : Optional.of(ButtonType.OK);
+
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            MainMenu.hideWindow((Stage) text.getScene().getWindow());
+            MainMenu.showWindow("hello-view", null);
+        }
     }
 
     private void getSourceAndDrainImage(){
-        Image image = new Image("file:" + MainMenu.getFile("images/pipe_1.png").getPath());
+        Image image = new Image("file:" + MainMenu.getFile("images/pipe_7.png").getPath());
         source = image;
         drain = image;
+    }
+
+    private int calculateScore(int seconds){
+        return (100 - pipesOnScreen.size()) * 10 - seconds;
+    }
+
+    private int calculateTime(Calendar finalTime){
+        return (int) ((finalTime.getTimeInMillis() - startTime.getTimeInMillis()) / 1000);
     }
 }

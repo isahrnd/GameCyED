@@ -22,8 +22,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     @Override
     public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
         if (!vertices.contains(source) || !vertices.contains(destination)) {
-            // Verificar si ambos vértices existen en el grafo
-            throw new IllegalArgumentException("Los vértices deben estar en el grafo.");
+            throw new IllegalArgumentException("The vertices must be in the graph.");
         }
         source.addNeighbor(destination);
         destination.addNeighbor(source);
@@ -34,13 +33,11 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     @Override
     public void removeVertex(Vertex<T> vertex) {
         if (!vertices.contains(vertex)) {
-            throw new IllegalArgumentException("El vértice no está en el grafo.");
+            throw new IllegalArgumentException("The vertex is not in the graph.");
         }
-
-        // Eliminar el vértice y todas las aristas asociadas
+        // delete the vertex and all associated edges
         vertices.remove(vertex);
         edges.removeIf(edge -> edge.getSource().equals(vertex) || edge.getDestination().equals(vertex));
-
         for (Vertex<T> v : vertices) {
             v.removeNeighbor(vertex);
         }
@@ -49,8 +46,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     @Override
     public void removeEdge(Vertex<T> source, Vertex<T> destination) {
         if (!vertices.contains(source) || !vertices.contains(destination)) {
-            // Verificar si ambos vértices existen en el grafo
-            throw new IllegalArgumentException("Los vértices deben estar en el grafo.");
+            throw new IllegalArgumentException("The vertices must be in the graph.");
         }
         source.removeNeighbor(destination);
         destination.removeNeighbor(source);
@@ -71,14 +67,14 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public ArrayList<Vertex<T>> dfs(Vertex<T> startVertex) {
+    public ArrayList<Vertex<T>> dfs(Vertex<T> source) {
         ArrayList<Vertex<T>> dfsOrder = new ArrayList<>();
         if (vertices.size() > 0) {
             for (Vertex<T> v : vertices) {
                 v.setColor(Color.WHITE);
             }
             time = 0;
-            dfs(startVertex, dfsOrder);
+            dfs(source, dfsOrder);
         }
         return dfsOrder;
     }
@@ -87,7 +83,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         time += 1;
         v.setDiscoveryTime(time);
         v.setColor(Color.GRAY);
-        dfsOrder.add(v); // Agregar el vértice al resultado de DFS
+        dfsOrder.add(v);
         for (Vertex<T> u : v.getNeighbors()) {
             if (u.getColor() == Color.WHITE) {
                 dfs(u, dfsOrder);
@@ -99,7 +95,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public ArrayList<Vertex<T>> bfs(Vertex<T> startVertex) {
+    public ArrayList<Vertex<T>> bfs(Vertex<T> source) {
         ArrayList<Vertex<T>> bfsOrder = new ArrayList<>();
 
         for (Vertex<T> u : vertices) {
@@ -108,19 +104,19 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
             u.setPredecessor(null);
         }
 
-        // Inicialización del vértice de inicio
-        startVertex.setColor(Color.GRAY);
-        startVertex.setDistance(0);
-        startVertex.setPredecessor(null);
+        // initialization of the source vertex
+        source.setColor(Color.GRAY);
+        source.setDistance(0);
+        source.setPredecessor(null);
 
-        // Cola para realizar el recorrido BFS
+        // queue to take the BFS route
         Queue<Vertex<T>> queue = new LinkedList<>();
-        queue.offer(startVertex);
+        queue.offer(source);
 
         while (!queue.isEmpty()) {
             Vertex<T> u = queue.poll();
-            bfsOrder.add(u); // Agregar el vértice al resultado de BFS
-            // Iteración sobre los vecinos del vértice actual
+            bfsOrder.add(u); // add vertex to BFS result
+            // iteration over the neighbors of the current vertex.
             for (Vertex<T> v : u.getNeighbors()) {
                 if (v.getColor() == Color.WHITE) {
                     v.setColor(Color.GRAY);
@@ -136,12 +132,12 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public ArrayList<Vertex<T>> dijkstra(Vertex<T> source, Vertex<T> drain) {
+    public ArrayList<Vertex<T>> dijkstra(Vertex<T> source, Vertex<T> destination) {
         Map<Vertex<T>, Integer> distances = new HashMap<>();
         Map<Vertex<T>, Vertex<T>> previousVertices = new HashMap<>();
         Set<Vertex<T>> S = new HashSet<>();
         PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(Comparator.comparingInt(distances::get));
-        // Inicializar las distancias
+        // initialize distances
         for (Vertex<T> vertex : vertices) {
             distances.put(vertex, Integer.MAX_VALUE);
         }
@@ -151,8 +147,8 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         while (!priorityQueue.isEmpty()) {
             Vertex<T> u = priorityQueue.poll();
             S.add(u);
-            if (u.equals(drain)) {
-                break; // Salir del bucle si alcanzamos el vértice de drenaje
+            if (u.equals(destination)) {
+                break; // break the loop if the target vertex is reached
             }
 
             for (Edge<T> edge : getEdges(u)) {
@@ -166,9 +162,9 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
             }
         }
 
-        // Reconstruir el camino desde el drenaje hasta la fuente
+        // reconstructing the path from the destination to the source
         ArrayList<Vertex<T>> shortestPath = new ArrayList<>();
-        Vertex<T> currentVertex = drain;
+        Vertex<T> currentVertex = destination;
         while (currentVertex != null) {
             shortestPath.add(currentVertex);
             currentVertex = previousVertices.get(currentVertex);
