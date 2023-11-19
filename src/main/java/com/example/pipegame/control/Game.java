@@ -1,10 +1,7 @@
 package com.example.pipegame.control;
 
 import com.example.pipegame.MainMenu;
-import com.example.pipegame.model.AdjacencyListGraph;
-import com.example.pipegame.model.Direction;
-import com.example.pipegame.model.Pipe;
-import com.example.pipegame.model.Vertex;
+import com.example.pipegame.model.*;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -176,6 +173,8 @@ public class Game implements Initializable {
                     GridPane.getRowIndex(node) == rowIndex
             );
 
+        } else {
+            currentImageIndex = 1;
         }
 
         // Creamos una tubería con la imagen actual y las coordenadas
@@ -194,12 +193,105 @@ public class Game implements Initializable {
         if (currentVertex != null) {
             currentVertex.setData(customObject);
         }
-        if (previousVertex != null) {
-            graphL.addEdge(previousVertex, currentVertex,1);
-            System.out.println("creo arista");
-        }
+        //if (previousVertex != null && areAdjacent(previousVertex, currentVertex)) {
+        //    graphL.addEdge(previousVertex, currentVertex,1);
+        //    System.out.println("creo arista");
+        //}
         // Actualizar el vértice anterior
-        previousVertex = currentVertex;
+        //previousVertex = currentVertex;
+    }
+
+    private void connectVerticesWithPipes() {
+        for (Pipe pipe : pipesOnScreen){
+            Vertex<Pipe> currentVertex = getVertexFromCell(pipe.getCol(), pipe.getRow());
+            connectWithNeighbors2(currentVertex);
+        }
+    }
+
+    private void connectWithNeighbors2(Vertex<Pipe> vertex) {
+        boolean isVertexWithPipe = vertex.getData().getType() != null;
+        int row = vertex.getData().getRow();
+        int col = vertex.getData().getCol();
+        // Conectar con el vecino superior (si existe)
+        if (row > 0) {
+            if (isVertexWithPipe){
+                Pipe upPipe = getObjectInCell(col, row - 1);
+                if (upPipe != null) {
+                    Vertex<Pipe> upVertex = getVertexFromCell(col, row - 1);
+                    graphL.addEdge(vertex, upVertex, 1);
+                }
+            } else {
+                Vertex<Pipe> neighbor = getVertexFromCell(col, row-1);
+                if (neighbor != null){
+                    graphL.addEdge(vertex, neighbor,1);
+                    System.out.println("vertice "+row+", "+col+" conectado arriba");
+                }
+            }
+        }
+
+        // Conectar con el vecino inferior (si existe)
+        if (row < board.getRowCount() - 1) {
+            if (isVertexWithPipe){
+                Pipe downPipe = getObjectInCell(col, row + 1);
+                if (downPipe != null) {
+                    Vertex<Pipe> downVertex = getVertexFromCell(col, row + 1);
+                    graphL.addEdge(vertex, downVertex, 1);
+                }
+            } else {
+                Vertex<Pipe> neighbor = getVertexFromCell(col, row+1);
+                if (neighbor != null){
+                    graphL.addEdge(vertex, neighbor,1);
+                    System.out.println("vertice "+row+", "+col+" conectado abajo");
+                }
+            }
+
+        }
+
+        // Conectar con el vecino izquierdo (si existe)
+        if (col > 0) {
+            if (isVertexWithPipe){
+                Pipe leftPipe = getObjectInCell(col - 1, row);
+                if (leftPipe != null) {
+                    Vertex<Pipe> leftVertex = getVertexFromCell(col - 1, row);
+                    graphL.addEdge(vertex, leftVertex, 1);
+                }
+            } else {
+                Vertex<Pipe> neighbor = getVertexFromCell(col-1, row);
+                if (neighbor != null){
+                    graphL.addEdge(vertex, neighbor,1);
+                    System.out.println("vertice "+row+", "+col+" conectado a la izquierda");
+                }
+            }
+        }
+
+        // Conectar con el vecino derecho (si existe)
+        if (col < board.getColumnCount() - 1) {
+            if (isVertexWithPipe){
+                Pipe downPipe = getObjectInCell(col, row + 1);
+                if (downPipe != null) {
+                    Vertex<Pipe> downVertex = getVertexFromCell(col, row + 1);
+                    graphL.addEdge(vertex, downVertex, 1);
+                }
+            } else {
+                Vertex<Pipe> neighbor = getVertexFromCell(col+1, row);
+                if (neighbor != null){
+                    graphL.addEdge(vertex, neighbor,1);
+                    System.out.println("vertice "+row+", "+col+" conectado a la derecha");
+                }
+            }
+        }
+    }
+
+
+    private boolean areAdjacent(Vertex<Pipe> vertex1, Vertex<Pipe> vertex2) {
+        // Verifica si dos vértices son adyacentes (en este caso, comparten una arista)
+        int row1 = vertex1.getData().getRow();
+        int col1 = vertex1.getData().getCol();
+        int row2 = vertex2.getData().getRow();
+        int col2 = vertex2.getData().getCol();
+
+        // Dos casillas son adyacentes si comparten una arista en el tablero
+        return Math.abs(row1 - row2) + Math.abs(col1 - col2) == 1;
     }
 
     private Vertex<Pipe> getVertexFromCell(int columnIndex, int rowIndex) {
@@ -228,18 +320,31 @@ public class Game implements Initializable {
 
     @FXML
     protected void validateButton() {
-        // Validación utilizando DFS
-        ArrayList<Vertex<Pipe>> path = graphL.dfs(sourceVertex);
-        System.out.println(path.size());
-        if (path.contains(drainVertex)) {
-            if (validatePipeConnections(path)){
-                System.out.println("camino con conexiones valido");
+        if (validateSourceAndDrain()){
+            connectVerticesWithPipes();
+            ArrayList<Vertex<Pipe>> path = graphL.bfs(sourceVertex);
+            System.out.println(path.size());
+            if (path.contains(drainVertex)) {
+                if (validatePipeConnections(path)){
+                    System.out.println("camino con conexiones valido");
+                } else {
+                    System.out.println("camino conectado pero con conexiones invalidas");
+                }
             } else {
-                System.out.println("camino conectado pero con conexiones invalidas");
+                System.out.println("Camino no conectado");
             }
         } else {
-            System.out.println("Camino no conectado");
+            System.out.println("invalido por fuente o drenaje");
         }
+    }
+
+    private boolean validateSourceAndDrain(){
+        PipeType sourceType = sourceVertex.getData().getType();
+        if (sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.ELBOW_UP_RIGHT || sourceType == PipeType.VERTICAL){
+            PipeType drainType = drainVertex.getData().getType();
+            return drainType == PipeType.ELBOW_DOWN_LEFT || drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.VERTICAL;
+        }
+        return false;
     }
 
     private boolean validatePipeConnections(ArrayList<Vertex<Pipe>> path) {
@@ -248,11 +353,13 @@ public class Game implements Initializable {
             Vertex<Pipe> nextVertex = path.get(i + 1);
             Direction direction = getPipeDirection(currentVertex,nextVertex);
             if (!isValidPipeConnection(currentVertex.getData(), nextVertex.getData(), direction)) {
-                return false;
+                System.out.println("invalid pipe: "+currentVertex.getData().getRow()+" "+currentVertex.getData().getCol());
             }
         }
         return true;
     }
+
+
 
     private Direction getPipeDirection(Vertex<Pipe> currentVertex, Vertex<Pipe> nextVertex) {
         int currentRow = currentVertex.getData().getRow();
@@ -273,15 +380,46 @@ public class Game implements Initializable {
     }
 
     private boolean isValidPipeConnection(Pipe currentPipe, Pipe nextPipe, Direction direction) {
-        int currentType = currentPipe.getType();
-        int nextType = nextPipe.getType();
-        if (currentType == 1) {
-            return (nextType == 1 || nextType == 3) && (direction == Direction.RIGHT || direction == Direction.LEFT);
-        } else if (currentType == 2) {
-            return (nextType == 2 || nextType == 3) && (direction == Direction.UP || direction == Direction.DOWN);
-        } else {
-            return nextType == 1 || nextType == 2 || nextType == 3;
+        PipeType currentType = currentPipe.getType();
+        PipeType nextType = nextPipe.getType();
+        if (currentType == PipeType.VERTICAL){
+            if (direction == Direction.DOWN){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_UP_RIGHT);
+            } else if (direction == Direction.UP){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_DOWN_LEFT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            }
+        } else if (currentType == PipeType.HORIZONTAL){
+            if (direction == Direction.LEFT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_RIGHT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            } else if (direction == Direction.RIGHT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_DOWN_LEFT);
+            }
+        } else if (currentType == PipeType.ELBOW_UP_RIGHT){
+            if (direction == Direction.RIGHT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_DOWN_LEFT);
+            } else if (direction == Direction.UP){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_DOWN_LEFT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            }
+        } else if (currentType == PipeType.ELBOW_UP_LEFT){
+            if (direction == Direction.LEFT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_RIGHT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            } else if (direction == Direction.UP){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_DOWN_LEFT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            }
+        } else if (currentType == PipeType.ELBOW_DOWN_RIGHT){
+            if (direction == Direction.RIGHT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_DOWN_LEFT);
+            } else if (direction == Direction.DOWN){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_UP_RIGHT);
+            }
+        } else if (currentType == PipeType.ELBOW_DOWN_LEFT){
+            if (direction == Direction.LEFT){
+                return (nextType == PipeType.HORIZONTAL || nextType == PipeType.ELBOW_UP_RIGHT || nextType == PipeType.ELBOW_DOWN_RIGHT);
+            } else if (direction == Direction.DOWN){
+                return (nextType == PipeType.VERTICAL || nextType == PipeType.ELBOW_UP_LEFT || nextType == PipeType.ELBOW_UP_RIGHT);
+            }
         }
+        return false;
     }
 
     @FXML
@@ -379,7 +517,6 @@ public class Game implements Initializable {
         for (Pipe pipe : pipesOnScreen) {
             int columnIndex = pipe.getCol();
             int rowIndex = pipe.getRow();
-            System.out.println(rowIndex+" "+columnIndex);
             board.getChildren().removeIf(node -> GridPane.getColumnIndex(node) != null &&
                     GridPane.getRowIndex(node) != null &&
                     GridPane.getColumnIndex(node) == columnIndex &&
@@ -396,7 +533,7 @@ public class Game implements Initializable {
     }
 
     private void getSourceAndDrainImage(){
-        Image image = new Image("file:" + MainMenu.getFile("images/pipe_2.png").getPath());
+        Image image = new Image("file:" + MainMenu.getFile("images/pipe_1.png").getPath());
         source = image;
         drain = image;
     }
