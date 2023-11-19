@@ -216,7 +216,32 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
 
     @Override
     public int[][] floydWarshall() {
-        return new int[0][];
+        int[][] dist = new int[vertices.size()][vertices.size()];
+
+        // initialize dist matrix with edge weights
+        for (int i = 0; i < vertices.size(); i++) {
+            for (int j = 0; j < vertices.size(); j++) {
+                if (i == j) {
+                    dist[i][j] = 0;
+                } else {
+                    Edge<T> edge = findEdge(vertices.get(i), vertices.get(j));
+                    dist[i][j] = (edge != null) ? edge.getWeight() : Integer.MAX_VALUE;
+                }
+            }
+        }
+
+        // apply Floyd-Warshall algorithm
+        for (int k = 0; k < vertices.size(); k++) {
+            for (int i = 0; i < vertices.size(); i++) {
+                for (int j = 0; j < vertices.size(); j++) {
+                    if (dist[i][j] > (dist[i][k] + dist[k][j]) && dist[k][j] != Integer.MAX_VALUE && dist[i][k] != Integer.MAX_VALUE) {
+                        dist[i][j] = dist[i][k] + dist[k][j];
+                    }
+                }
+            }
+        }
+
+        return dist;
     }
 
     @Override
@@ -242,5 +267,17 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
             adjacencyMatrix[vertexIndex][i] = 0;
             adjacencyMatrix[i][vertexIndex] = 0;
         }
+    }
+
+    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
+        int sourceIndex = vertices.indexOf(source);
+        int destinationIndex = vertices.indexOf(destination);
+
+        if (sourceIndex != -1 && destinationIndex != -1 && adjacencyMatrix[sourceIndex][destinationIndex] != 0) {
+            int weight = adjacencyMatrix[sourceIndex][destinationIndex];
+            return new Edge<>(source, destination, weight);
+        }
+
+        return null;
     }
 }
