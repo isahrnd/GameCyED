@@ -1,6 +1,7 @@
 package com.example.pipegame.model;
 
 public class Edge<T> {
+
     private Vertex<T> source;
     private Vertex<T> destination;
     private int weight;

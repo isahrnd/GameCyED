@@ -20,14 +20,13 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
-        if (!vertices.contains(source) || !vertices.contains(destination)) {
-            throw new IllegalArgumentException("The vertices must be in the graph.");
+    public Vertex<T> findVertex(T data) {
+        for (Vertex<T> vertex : vertices) {
+            if (vertex.getData().equals(data)) {
+                return vertex;
+            }
         }
-        source.addNeighbor(destination);
-        destination.addNeighbor(source);
-        Edge<T> edge = new Edge<>(source, destination, weight);
-        edges.add(edge);
+        return null;
     }
 
     @Override
@@ -44,6 +43,17 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
+    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
+        if (!vertices.contains(source) || !vertices.contains(destination)) {
+            throw new IllegalArgumentException("The vertices must be in the graph.");
+        }
+        source.addNeighbor(destination);
+        destination.addNeighbor(source);
+        Edge<T> edge = new Edge<>(source, destination, weight);
+        edges.add(edge);
+    }
+
+    @Override
     public void removeEdge(Vertex<T> source, Vertex<T> destination) {
         if (!vertices.contains(source) || !vertices.contains(destination)) {
             throw new IllegalArgumentException("The vertices must be in the graph.");
@@ -54,11 +64,6 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         if (edgeToRemove != null) {
             edges.remove(edgeToRemove);
         }
-    }
-
-    @Override
-    public ArrayList<Vertex<T>> getVertices() {
-        return vertices;
     }
 
     @Override
@@ -167,8 +172,120 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         return shortestPath;
     }
 
-    //Auxiliars
+    @Override
+    public int[][] floydWarshall() {
+        int size = vertices.size();
+        int[][] dist = new int[size][size];
 
+        // initialize dist matrix with edge weights
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (i == j) {
+                    dist[i][j] = 0;
+                } else {
+                    Edge<T> edge = findEdge(vertices.get(i), vertices.get(j));
+                    dist[i][j] = (edge != null) ? edge.getWeight() : Integer.MAX_VALUE;
+                }
+            }
+        }
+
+        // apply Floyd-Warshall algorithm
+        for (int k = 0; k < size; k++) {
+            for (int i = 0; i < size; i++) {
+                for (int j = 0; j < size; j++) {
+                    if (dist[i][k] != Integer.MAX_VALUE && dist[k][j] != Integer.MAX_VALUE && dist[i][k] + dist[k][j] < dist[i][j]) {
+                        dist[i][j] = dist[i][k] + dist[k][j];
+                    }
+                }
+            }
+        }
+
+        return dist;
+    }
+
+    @Override
+    public AdjacencyListGraph<T> primAL(Vertex<T> startVertex) {
+        AdjacencyListGraph<T> mstGraph = new AdjacencyListGraph<>();
+
+        // Initialize key, color, and pred arrays
+        for (Vertex<T> u : vertices) {
+            u.setDistance(Integer.MAX_VALUE);
+            u.setColor(Color.WHITE);
+            u.setPredecessor(null);
+            mstGraph.addVertex(new Vertex<>(u.getData()));
+        }
+
+        // Start with the given start vertex
+        startVertex.setDistance(0);
+
+        PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(vertices.size(), Comparator.comparingInt(Vertex::getDistance));
+        priorityQueue.addAll(vertices);
+
+        while (!priorityQueue.isEmpty()) {
+            Vertex<T> u = priorityQueue.poll();
+            u.setColor(Color.BLACK);
+
+            for (Vertex<T> v : u.getNeighbors()) {
+                int weight = findEdge(u,v) != null ? Objects.requireNonNull(findEdge(u, v)).getWeight() : Integer.MAX_VALUE;
+                if (v.getColor() == Color.WHITE && weight < v.getDistance()) {
+                    v.setDistance(weight);
+                    priorityQueue.remove(v); // Remove and re-add to update the priority queue
+                    priorityQueue.add(v);
+                    v.setPredecessor(u);
+
+                    Vertex<T> uInMST = mstGraph.findVertex(u.getData());
+                    Vertex<T> vInMST = mstGraph.findVertex(v.getData());
+
+                    if (uInMST != null && vInMST != null) {
+                        mstGraph.addEdge(uInMST, vInMST, weight);
+                    }
+                }
+            }
+        }
+
+        return mstGraph;
+    }
+
+    @Override
+    public AdjacencyListGraph<T> kruskalAL() {
+        AdjacencyListGraph<T> minimumSpanningTree = new AdjacencyListGraph<>();
+        edges.sort(Comparator.comparingInt(Edge::getWeight));
+
+        DisjointSet<T> disjointSet = new DisjointSet<>(vertices);
+
+        for (Vertex<T> vertex : vertices) {
+            minimumSpanningTree.addVertex(new Vertex<>(vertex.getData()));
+        }
+
+        for (Edge<T> edge : edges) {
+            Vertex<T> sourceVertex = edge.getSource();
+            Vertex<T> destinationVertex = edge.getDestination();
+
+            if (!disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
+                disjointSet.union(sourceVertex.getData(), destinationVertex.getData());
+                minimumSpanningTree.addEdge(new Vertex<>(sourceVertex.getData()), new Vertex<>(destinationVertex.getData()), edge.getWeight());
+            }
+        }
+
+        return minimumSpanningTree;
+    }
+
+    @Override
+    public AdjacencyMatrixGraph<T> primAM(Vertex<T> startVertex) {
+        return null;
+    }
+
+    @Override
+    public AdjacencyMatrixGraph<T> kruskalAM() {
+        return null;
+    }
+
+    @Override
+    public ArrayList<Vertex<T>> getVertices() {
+        return vertices;
+    }
+
+    //auxiliars
     public void removeAllEdges() {
         for (Vertex<T> vertex : vertices) {
             removeAllEdgesFromVertex(vertex);
@@ -201,48 +318,38 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         return vertexEdges;
     }
 
-    @Override
-    public int[][] floydWarshall() {
-        int size = vertices.size();
-        int[][] dist = new int[size][size];
+    private static class DisjointSet<T> {
+        private final Map<T, T> parentMap;
 
-        // initialize dist matrix with edge weights
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (i == j) {
-                    dist[i][j] = 0;
-                } else {
-                    Edge<T> edge = findEdge(vertices.get(i), vertices.get(j));
-                    dist[i][j] = (edge != null) ? edge.getWeight() : Integer.MAX_VALUE;
-                }
+        public DisjointSet(Collection<Vertex<T>> vertices) {
+            parentMap = new HashMap<>();
+            for (Vertex<T> vertex : vertices) {
+                parentMap.put(vertex.getData(), vertex.getData());
             }
         }
 
-        // apply Floyd-Warshall algorithm
-        for (int k = 0; k < size; k++) {
-            for (int i = 0; i < size; i++) {
-                for (int j = 0; j < size; j++) {
-                    if (dist[i][k] != Integer.MAX_VALUE && dist[k][j] != Integer.MAX_VALUE && dist[i][k] + dist[k][j] < dist[i][j]) {
-                        dist[i][j] = dist[i][k] + dist[k][j];
-                    }
-                }
+        public T find(T element) {
+            if (!parentMap.containsKey(element)) {
+                throw new IllegalArgumentException("Element not found in the disjoint set");
+            }
+
+            if (element.equals(parentMap.get(element))) {
+                return element;
+            } else {
+                T root = find(parentMap.get(element));
+                parentMap.put(element, root);
+                return root;
             }
         }
 
-        return dist;
-    }
-    @Override
-    public ArrayList<T> prim() {
-        return null;
+        public void union(T set1, T set2) {
+            T root1 = find(set1);
+            T root2 = find(set2);
+
+            if (!root1.equals(root2)) {
+                parentMap.put(root1, root2);
+            }
+        }
     }
 
-    @Override
-    public ArrayList<T> kruskal() {
-        return null;
-    }
-
-    @Override
-    public ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex) {
-        return null;
-    }
 }

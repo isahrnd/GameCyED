@@ -17,7 +17,7 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     @Override
     public void addVertex(Vertex<T> vertex) {
         vertices.add(vertex);
-        // Increase the size of the adjacency matrix
+        // increase the size of the adjacency matrix
         int[][] newMatrix = new int[vertices.size()][vertices.size()];
         for (int i = 0; i < adjacencyMatrix.length; i++) {
             System.arraycopy(adjacencyMatrix[i], 0, newMatrix[i], 0, adjacencyMatrix[i].length);
@@ -26,16 +26,13 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
-        if (!vertices.contains(source) || !vertices.contains(destination)) {
-            throw new IllegalArgumentException("The vertices must be in the graph.");
+    public Vertex<T> findVertex(T data) {
+        for (Vertex<T> vertex : vertices) {
+            if (vertex.getData().equals(data)) {
+                return vertex;
+            }
         }
-
-        int sourceIndex = vertices.indexOf(source);
-        int destinationIndex = vertices.indexOf(destination);
-
-        adjacencyMatrix[sourceIndex][destinationIndex] = weight;
-        adjacencyMatrix[destinationIndex][sourceIndex] = weight;
+        return null;
     }
 
     @Override
@@ -66,6 +63,19 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
+    public void addEdge(Vertex<T> source, Vertex<T> destination, int weight) {
+        if (!vertices.contains(source) || !vertices.contains(destination)) {
+            throw new IllegalArgumentException("The vertices must be in the graph.");
+        }
+
+        int sourceIndex = vertices.indexOf(source);
+        int destinationIndex = vertices.indexOf(destination);
+
+        adjacencyMatrix[sourceIndex][destinationIndex] = weight;
+        adjacencyMatrix[destinationIndex][sourceIndex] = weight;
+    }
+
+    @Override
     public void removeEdge(Vertex<T> source, Vertex<T> destination) {
         if (!vertices.contains(source) || !vertices.contains(destination)) {
             throw new IllegalArgumentException("The vertices must be in the graph.");
@@ -78,15 +88,7 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
         adjacencyMatrix[destinationIndex][sourceIndex] = 0;
     }
 
-    @Override
-    public ArrayList<Vertex<T>> getNeighbors(Vertex<T> vertex) {
-        return null;
-    }
 
-    @Override
-    public ArrayList<Vertex<T>> getVertices() {
-        return vertices;
-    }
 
     @Override
     public ArrayList<Vertex<T>> dfs(Vertex<T> source) {
@@ -245,13 +247,87 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public ArrayList<T> prim() {
+    public AdjacencyListGraph<T> primAL(Vertex<T> startVertex) {
         return null;
     }
 
     @Override
-    public ArrayList<T> kruskal() {
+    public AdjacencyListGraph<T> kruskalAL() {
         return null;
+    }
+
+    @Override
+    public AdjacencyMatrixGraph<T> primAM(Vertex<T> startVertex) {
+        AdjacencyMatrixGraph<T> mstGraph = new AdjacencyMatrixGraph<>();
+
+        // initialize distance, color, and pred arrays
+        for (Vertex<T> u : vertices) {
+            u.setDistance(Integer.MAX_VALUE);
+            u.setColor(Color.WHITE);
+            u.setPredecessor(null);
+            mstGraph.addVertex(new Vertex<>(u.getData()));
+        }
+
+        // start with the given start vertex
+        startVertex.setDistance(0);
+
+        PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(vertices.size(), Comparator.comparingInt(Vertex::getDistance));
+        priorityQueue.addAll(vertices);
+
+        while (!priorityQueue.isEmpty()) {
+            Vertex<T> u = priorityQueue.poll();
+            u.setColor(Color.BLACK);
+
+            for (Vertex<T> v : vertices) {
+                int weight = adjacencyMatrix[vertices.indexOf(u)][vertices.indexOf(v)];
+
+                if (v.getColor() == Color.WHITE && weight > 0 && weight < v.getDistance()) {
+                    v.setDistance(weight);
+                    priorityQueue.remove(v); // remove and re-add to update the priority queue
+                    priorityQueue.add(v);
+                    v.setPredecessor(u);
+
+                    Vertex<T> uInMST = mstGraph.findVertex(u.getData());
+                    Vertex<T> vInMST = mstGraph.findVertex(v.getData());
+
+                    if (uInMST != null && vInMST != null) {
+                        mstGraph.addEdge(uInMST, vInMST, weight);
+                    }
+                }
+            }
+        }
+
+        return mstGraph;
+    }
+
+    @Override
+    public AdjacencyMatrixGraph<T> kruskalAM() {
+        AdjacencyMatrixGraph<T> minimumSpanningTree = new AdjacencyMatrixGraph<>();
+        List<Edge<T>> allEdges = getAllEdges();
+        allEdges.sort(Comparator.comparingInt(Edge::getWeight));
+
+        DisjointSet<T> disjointSet = new DisjointSet<>(vertices);
+
+        for (Vertex<T> vertex : vertices) {
+            minimumSpanningTree.addVertex(new Vertex<>(vertex.getData()));
+        }
+
+        for (Edge<T> edge : allEdges) {
+            Vertex<T> sourceVertex = edge.getSource();
+            Vertex<T> destinationVertex = edge.getDestination();
+
+            if (!disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
+                disjointSet.union(sourceVertex.getData(), destinationVertex.getData());
+                minimumSpanningTree.addEdge(new Vertex<>(sourceVertex.getData()), new Vertex<>(destinationVertex.getData()), edge.getWeight());
+            }
+        }
+
+        return minimumSpanningTree;
+    }
+
+    @Override
+    public ArrayList<Vertex<T>> getVertices() {
+        return vertices;
     }
 
     public void removeAllEdges() {
@@ -269,6 +345,21 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
         }
     }
 
+    private List<Edge<T>> getAllEdges() {
+        List<Edge<T>> allEdges = new ArrayList<>();
+        for (int i = 0; i < adjacencyMatrix.length; i++) {
+            for (int j = i + 1; j < adjacencyMatrix[i].length; j++) {
+                if (adjacencyMatrix[i][j] != 0) {
+                    Vertex<T> source = vertices.get(i);
+                    Vertex<T> destination = vertices.get(j);
+                    int weight = adjacencyMatrix[i][j];
+                    allEdges.add(new Edge<>(source, destination, weight));
+                }
+            }
+        }
+        return allEdges;
+    }
+
     public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
         int sourceIndex = vertices.indexOf(source);
         int destinationIndex = vertices.indexOf(destination);
@@ -277,7 +368,41 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
             int weight = adjacencyMatrix[sourceIndex][destinationIndex];
             return new Edge<>(source, destination, weight);
         }
-
         return null;
     }
+
+    private static class DisjointSet<T> {
+        private final Map<T, T> parentMap;
+
+        public DisjointSet(Collection<Vertex<T>> vertices) {
+            parentMap = new HashMap<>();
+            for (Vertex<T> vertex : vertices) {
+                parentMap.put(vertex.getData(), vertex.getData());
+            }
+        }
+
+        public T find(T element) {
+            if (!parentMap.containsKey(element)) {
+                throw new IllegalArgumentException("Element not found in the disjoint set");
+            }
+
+            if (element.equals(parentMap.get(element))) {
+                return element;
+            } else {
+                T root = find(parentMap.get(element));
+                parentMap.put(element, root);
+                return root;
+            }
+        }
+
+        public void union(T set1, T set2) {
+            T root1 = find(set1);
+            T root2 = find(set2);
+
+            if (!root1.equals(root2)) {
+                parentMap.put(root1, root2);
+            }
+        }
+    }
+
 }

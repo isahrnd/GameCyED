@@ -30,6 +30,7 @@ public class MainMenu extends Application {
             scene = new Scene(root);
             stage = new Stage();
             stage.setScene(scene);
+            stage.setTitle("Pipe game");
             stage.sizeToScene();
             stage.setResizable(false);
             stage.show();

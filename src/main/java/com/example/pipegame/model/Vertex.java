@@ -4,6 +4,7 @@ package com.example.pipegame.model;
 import java.util.ArrayList;
 
 public class Vertex<T> {
+
     private T data;
     private Color color;
     private int distance;
