@@ -45,6 +45,7 @@ public class Game implements Initializable {
     private boolean[][] blockedCells;
     private Image source, drain;
     private Calendar startTime;
+    private boolean isVertical;
     public static int selectedGraphMode;
     private final ArrayList<Pipe> pipesOnScreen = new ArrayList<>();
 
@@ -52,6 +53,8 @@ public class Game implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         gc = canvas.getGraphicsContext2D();
         canvas.setFocusTraversable(true);
+        int direction = (int)(Math.random() * 2) + 1;
+        isVertical = direction == 1;
         getSourceAndDrainImage();
         if (selectedGraphMode == 1) {
             graph = new AdjacencyListGraph<>();
@@ -85,10 +88,10 @@ public class Game implements Initializable {
     }
 
     private void generateBlockedCells(){
-        blockedCells = new boolean[10][10];
+        blockedCells = new boolean[board.getRowCount()][board.getColumnCount()];
         Random random = new Random();
         int blockedCount = 0;
-        while (blockedCount < 30) {
+        while (blockedCount < 65) {
             int row = random.nextInt(board.getRowCount());
             int col = random.nextInt(board.getColumnCount());
             if (!isCellBlocked(row, col)) {
@@ -115,32 +118,32 @@ public class Game implements Initializable {
     }
 
     private void addSourceAndDrainVertex(){
-        int[] cols = generateSourceAndDrainCols();
-        sourceVertex = getVertexFromCell(cols[0],0);
-        drainVertex = getVertexFromCell(cols[1],9);
+        int[] pos = generateSourceAndDrainCols(isVertical);
+        sourceVertex = getVertexFromCell(isVertical ? pos[0] : 0, isVertical ? 0 : pos[0]);
+        drainVertex = getVertexFromCell(isVertical ? pos[1] : board.getColumnCount()-1, isVertical ? board.getRowCount()-1 : pos[1]);
     }
 
     private void paintFountainAndDraw() {
-        gc.drawImage(source, allowedXCoordinates(sourceVertex.getData().getCol()), 0, 37, 23);
-        gc.drawImage(drain, allowedXCoordinates(drainVertex.getData().getCol()), 376, 37, 24);
+        gc.drawImage(source, isVertical ? allowedCoordinates(sourceVertex.getData().getCol()) : 0, isVertical ? 0 : allowedCoordinates(sourceVertex.getData().getRow()), 35, 35);
+        gc.drawImage(drain, isVertical ? allowedCoordinates(drainVertex.getData().getCol()) : 565, isVertical ? 565 : allowedCoordinates(drainVertex.getData().getRow()), 35, 35);
     }
 
-    private int allowedXCoordinates(int position){
-        int[] x_coordinates = {46,82,117,152,188,223,258,293,329,364};
-        return x_coordinates[position];
+    private int allowedCoordinates(int position){
+        int[] coordinates = {35,71,106,141,176,211,246,282,318,353,388,424,459,494,530};
+        return coordinates[position];
     }
 
-    private int[] generateSourceAndDrainCols() {
+    private int[] generateSourceAndDrainCols(boolean isVertical) {
         Random random = new Random();
-        int fountain_col;
+        int fountain_pos;
         do {
-            fountain_col = random.nextInt(board.getColumnCount());
-        } while (isCellBlocked(0, fountain_col));
-        int drain_col;
+            fountain_pos = random.nextInt(board.getColumnCount());
+        } while (isCellBlocked(isVertical ? 0 : fountain_pos, isVertical ? fountain_pos : 0));
+        int drain_pos;
         do {
-            drain_col = random.nextInt(board.getColumnCount());
-        } while (isCellBlocked(9, drain_col));
-        return new int[]{fountain_col, drain_col};
+            drain_pos = random.nextInt(board.getColumnCount());
+        } while (isCellBlocked(isVertical ? board.getRowCount()-1 : drain_pos, isVertical ? drain_pos : board.getRowCount()-1));
+        return new int[]{fountain_pos, drain_pos};
     }
 
     private boolean isCellBlocked(int row, int col) {
@@ -303,9 +306,15 @@ public class Game implements Initializable {
 
     private boolean validateSourceAndDrain(){
         PipeType sourceType = sourceVertex.getData().getType();
-        if (sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.ELBOW_UP_RIGHT || sourceType == PipeType.VERTICAL){
-            PipeType drainType = drainVertex.getData().getType();
-            return drainType == PipeType.ELBOW_DOWN_LEFT || drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.VERTICAL;
+        PipeType drainType = drainVertex.getData().getType();
+        if (isVertical){
+            if (sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.ELBOW_DOWN_RIGHT || sourceType == PipeType.VERTICAL){
+                return drainType == PipeType.ELBOW_DOWN_LEFT || drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.VERTICAL;
+            }
+        } else {
+            if (sourceType == PipeType.ELBOW_DOWN_LEFT || sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.HORIZONTAL){
+                return drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.ELBOW_UP_RIGHT || drainType == PipeType.HORIZONTAL;
+            }
         }
         return false;
     }
@@ -454,7 +463,7 @@ public class Game implements Initializable {
     }
 
     private void getSourceAndDrainImage(){
-        Image image = new Image("file:" + MainMenu.getFile("images/pipe_7.png").getPath());
+        Image image = new Image("file:" + MainMenu.getFile("images/pipe_"+(isVertical? "7":"8")+".png").getPath());
         source = image;
         drain = image;
     }
