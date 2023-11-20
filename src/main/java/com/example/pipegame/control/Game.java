@@ -120,7 +120,7 @@ public class Game implements Initializable {
         drainVertex = getVertexFromCell(cols[1],9);
     }
 
-    public void paintFountainAndDraw() {
+    private void paintFountainAndDraw() {
         gc.drawImage(source, allowedXCoordinates(sourceVertex.getData().getCol()), 0, 37, 23);
         gc.drawImage(drain, allowedXCoordinates(drainVertex.getData().getCol()), 376, 37, 24);
     }

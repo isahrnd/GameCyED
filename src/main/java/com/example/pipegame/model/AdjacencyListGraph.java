@@ -319,6 +319,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     private static class DisjointSet<T> {
+
         private final Map<T, T> parentMap;
 
         public DisjointSet(Collection<Vertex<T>> vertices) {

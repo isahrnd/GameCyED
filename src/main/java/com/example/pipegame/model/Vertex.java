@@ -11,7 +11,7 @@ public class Vertex<T> {
     private Vertex<T> predecessor;
     private int discoveryTime;
     private int finishTime;
-    private final ArrayList<Vertex<T>> neighbors;
+    private ArrayList<Vertex<T>> neighbors;
 
     public Vertex(T data) {
         this.data = data;
