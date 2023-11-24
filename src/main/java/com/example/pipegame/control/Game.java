@@ -91,7 +91,7 @@ public class Game implements Initializable {
         blockedCells = new boolean[board.getRowCount()][board.getColumnCount()];
         Random random = new Random();
         int blockedCount = 0;
-        while (blockedCount < 65) {
+        while (blockedCount < 70) {
             int row = random.nextInt(board.getRowCount());
             int col = random.nextInt(board.getColumnCount());
             if (!isCellBlocked(row, col)) {
@@ -284,6 +284,15 @@ public class Game implements Initializable {
             int score = calculateScore(seconds);
             String msg = "Number of pipes used: " + pipesOnScreen.size();
             msg += "\nTime: " + seconds + " sec.";
+
+            int myPathSize = path().size();
+            highlightPath(path(), Color.GREEN);
+            int shortestPathSize = shortestPath().size();
+            if (myPathSize == shortestPathSize){
+                msg += "\nYou found one of the fastest ways! +1000 pts";
+                score += 1000;
+            }
+
             msg += "\nFinal score: " + score;
             MainMenu.showAlert(Alert.AlertType.INFORMATION,"Information","Congratulations! You won the game",msg);
             MainMenu.hideWindow((Stage)vText.getScene().getWindow());
@@ -397,13 +406,16 @@ public class Game implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             deleteCurrentPipes();
             buildGraphWithoutPipes();
-            ArrayList<Vertex<Pipe>> shortestPath = graph.dijkstra(sourceVertex, drainVertex);
-            highlightShortestPath(shortestPath);
+            highlightPath(shortestPath(), Color.YELLOW);
             validateButton.setDisable(true);
             resetButton.setDisable(true);
             giveUpButton.setDisable(true);
             handleGridClickEnabled = false;
         }
+    }
+
+    private ArrayList<Vertex<Pipe>> shortestPath(){
+        return graph.dijkstra(sourceVertex,drainVertex);
     }
 
     private void buildGraphWithoutPipes() {
@@ -417,12 +429,12 @@ public class Game implements Initializable {
         }
     }
 
-    private void highlightShortestPath(ArrayList<Vertex<Pipe>> shortestPath) {
-        for (Vertex<Pipe> vertex : shortestPath) {
+    private void highlightPath(ArrayList<Vertex<Pipe>> path, Color color) {
+        for (Vertex<Pipe> vertex : path) {
             int columnIndex = vertex.getData().getCol();
             int rowIndex = vertex.getData().getRow();
             Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
-            rectangle.setFill(Color.YELLOW);
+            rectangle.setFill(color);
             board.add(rectangle, columnIndex, rowIndex);
         }
     }
