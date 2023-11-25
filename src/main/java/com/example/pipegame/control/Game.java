@@ -91,7 +91,7 @@ public class Game implements Initializable {
         blockedCells = new boolean[board.getRowCount()][board.getColumnCount()];
         Random random = new Random();
         int blockedCount = 0;
-        while (blockedCount < 70) {
+        while (blockedCount < 60) {
             int row = random.nextInt(board.getRowCount());
             int col = random.nextInt(board.getColumnCount());
             if (!isCellBlocked(row, col)) {
@@ -286,7 +286,6 @@ public class Game implements Initializable {
             msg += "\nTime: " + seconds + " sec.";
 
             int myPathSize = path().size();
-            highlightPath(path(), Color.GREEN);
             int shortestPathSize = shortestPath().size();
             if (myPathSize == shortestPathSize){
                 msg += "\nYou found one of the fastest ways! +1000 pts";
@@ -317,25 +316,33 @@ public class Game implements Initializable {
         PipeType sourceType = sourceVertex.getData().getType();
         PipeType drainType = drainVertex.getData().getType();
         if (isVertical){
-            if (sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.ELBOW_DOWN_RIGHT || sourceType == PipeType.VERTICAL){
-                return drainType == PipeType.ELBOW_DOWN_LEFT || drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.VERTICAL;
-            }
+            return (sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.ELBOW_DOWN_RIGHT || sourceType == PipeType.VERTICAL) &&
+                   (drainType == PipeType.ELBOW_DOWN_LEFT || drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.VERTICAL);
         } else {
-            if (sourceType == PipeType.ELBOW_DOWN_LEFT || sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.HORIZONTAL){
-                return drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.ELBOW_UP_RIGHT || drainType == PipeType.HORIZONTAL;
-            }
+            return (sourceType == PipeType.ELBOW_DOWN_LEFT || sourceType == PipeType.ELBOW_UP_LEFT || sourceType == PipeType.HORIZONTAL) &&
+                   (drainType == PipeType.ELBOW_DOWN_RIGHT || drainType == PipeType.ELBOW_UP_RIGHT || drainType == PipeType.HORIZONTAL);
         }
-        return false;
     }
 
     private boolean validatePipeConnections(ArrayList<Vertex<Pipe>> path) {
-        for (int i = 0; i < path.size() - 1; i++) {
-            Vertex<Pipe> currentVertex = path.get(i);
-            Vertex<Pipe> nextVertex = path.get(i + 1);
-            Direction direction = getPipeDirection(currentVertex,nextVertex);
-            if (!isValidPipeConnection(currentVertex.getData(), nextVertex.getData(), direction)) {
+        ArrayList<Vertex<Pipe>> covered = new ArrayList<>();
+        Vertex<Pipe> currentVertex = path.get(0);
+        while (currentVertex != drainVertex){
+            Vertex<Pipe> nextVertex = null;
+            for (Vertex<Pipe> neighbor : currentVertex.getNeighbors()) {
+                if (!covered.contains(neighbor)) {
+                    Direction direction = getPipeDirection(currentVertex, neighbor);
+                    if (isValidPipeConnection(currentVertex.getData(), neighbor.getData(), direction)) {
+                        nextVertex = neighbor;
+                        break;
+                    }
+                }
+            }
+            if (nextVertex == null) {
                 return false;
             }
+            covered.add(currentVertex);
+            currentVertex = nextVertex;
         }
         return true;
     }
@@ -406,7 +413,7 @@ public class Game implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             deleteCurrentPipes();
             buildGraphWithoutPipes();
-            highlightPath(shortestPath(), Color.YELLOW);
+            highlightPath(shortestPath());
             validateButton.setDisable(true);
             resetButton.setDisable(true);
             giveUpButton.setDisable(true);
@@ -429,12 +436,12 @@ public class Game implements Initializable {
         }
     }
 
-    private void highlightPath(ArrayList<Vertex<Pipe>> path, Color color) {
+    private void highlightPath(ArrayList<Vertex<Pipe>> path) {
         for (Vertex<Pipe> vertex : path) {
             int columnIndex = vertex.getData().getCol();
             int rowIndex = vertex.getData().getRow();
             Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
-            rectangle.setFill(color);
+            rectangle.setFill(Color.YELLOW);
             board.add(rectangle, columnIndex, rowIndex);
         }
     }
