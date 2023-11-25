@@ -1,4 +1,4 @@
-# GameCyED
+#CED - Integrative Task II
 
 Students:
 - Isabella Hernandez
