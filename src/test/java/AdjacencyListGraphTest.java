@@ -495,7 +495,7 @@ public class AdjacencyListGraphTest {
     }
 
 
-    //Cambiar
+
     @Test
     public void testPrimEdgeCases() {
 
