@@ -1,4 +1,4 @@
-#CED - Integrative Task II
+**Integrative task II - Computation and discrete structures I**
 
 Students:
 - Isabella Hernandez
