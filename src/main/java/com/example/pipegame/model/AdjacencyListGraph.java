@@ -299,7 +299,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         }
     }
 
-    private Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
+    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
         for (Edge<T> edge : edges) {
             if (edge.getSource().equals(source) && edge.getDestination().equals(destination)) {
                 return edge;
