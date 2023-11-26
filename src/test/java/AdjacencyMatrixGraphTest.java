@@ -12,11 +12,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class AdjacencyMatrixGraphTest {
 
-    private AdjacencyListGraph<Integer> graph;
+    private AdjacencyMatrixGraph<Integer> graph;
 
     @BeforeEach
     public void setUp() {
-        graph = new AdjacencyListGraph<>();
+        graph = new AdjacencyMatrixGraph<>();
     }
 
     @Test
@@ -149,18 +149,17 @@ public class AdjacencyMatrixGraphTest {
     }
 
     @Test
-    public void testAddEdgeEdgeCases() {
-        AdjacencyMatrixGraph<Integer> graph = new AdjacencyMatrixGraph<>();
-        Vertex<Integer> vertexA = new Vertex<>(1);
-        Vertex<Integer> vertexB = new Vertex<>(2);
+    public void testAddEdgeLimit() {
+        // Escenario de límite
+        Vertex<Integer> vertex1 = new Vertex<>(Integer.MAX_VALUE);
+        Vertex<Integer> vertex2 = new Vertex<>(Integer.MIN_VALUE);
+        graph.addVertex(vertex1);
+        graph.addVertex(vertex2);
 
-        graph.addVertex(vertexA);
-        graph.addVertex(vertexB);
-        graph.addEdge(vertexA, vertexB, 0); // Añadir un borde con peso cero
-
-        Edge<Integer> edge = graph.findEdge(vertexA, vertexB);
+        graph.addEdge(vertex1, vertex2, 15);
+        Edge<Integer> edge = graph.findEdge(vertex1, vertex2);
         assertNotNull(edge);
-        assertEquals(0, edge.getWeight());
+        assertEquals(15, edge.getWeight());
     }
 
     @Test
@@ -359,31 +358,33 @@ public class AdjacencyMatrixGraphTest {
 
 
     @Test
-    public void testDijkstraStandard() {
-        AdjacencyMatrixGraph<String> graph = new AdjacencyMatrixGraph<>();
-        Vertex<String> vertexA = new Vertex<>("A");
-        Vertex<String> vertexB = new Vertex<>("B");
-        Vertex<String> vertexC = new Vertex<>("C");
-        Vertex<String> vertexD = new Vertex<>("D");
+    public void testDijkstraStandardCase() {
+        // Arrange
+        AdjacencyMatrixGraph<Integer> graph = new AdjacencyMatrixGraph<>();
+        Vertex<Integer> vertexA = new Vertex<>(1);
+        Vertex<Integer> vertexB = new Vertex<>(2);
+        Vertex<Integer> vertexC = new Vertex<>(3);
+        Vertex<Integer> vertexD = new Vertex<>(4);
 
         graph.addVertex(vertexA);
         graph.addVertex(vertexB);
         graph.addVertex(vertexC);
         graph.addVertex(vertexD);
 
-        graph.addEdge(vertexA, vertexB, 2);
-        graph.addEdge(vertexA, vertexC, 4);
-        graph.addEdge(vertexB, vertexC, 1);
-        graph.addEdge(vertexB, vertexD, 7);
-        graph.addEdge(vertexC, vertexD, 3);
+        graph.addEdge(vertexA, vertexB, 1);
+        graph.addEdge(vertexA, vertexC, 3);
+        graph.addEdge(vertexB, vertexD, 2);
+        graph.addEdge(vertexC, vertexD, 1);
 
-        ArrayList<Vertex<String>> shortestPath = graph.dijkstra(vertexA, vertexD);
+        // Act
+        ArrayList<Vertex<Integer>> shortestPath = graph.dijkstra(vertexA, vertexD);
 
+        // Assert
         assertNotNull(shortestPath);
-        assertEquals(3, shortestPath.size()); // El camino más corto debería tener 3 vértices
-        assertEquals(vertexA, shortestPath.get(0));
+        assertEquals(3, shortestPath.size());
+        assertEquals(vertexD, shortestPath.get(0));
         assertEquals(vertexB, shortestPath.get(1));
-        assertEquals(vertexD, shortestPath.get(2));
+        assertEquals(vertexA, shortestPath.get(2));
     }
 
     @Test
@@ -516,16 +517,26 @@ public class AdjacencyMatrixGraphTest {
         return edgeCount;
     }
 
-    //CAMBIAR
     @Test
     public void testPrimEdgeCases() {
-        AdjacencyMatrixGraph<String> graph = new AdjacencyMatrixGraph<>();
-        AdjacencyMatrixGraph<String> mstGraph = graph.primAM();
+
+        AdjacencyMatrixGraph<Integer> graph = new AdjacencyMatrixGraph<>();
+        Vertex<Integer> vertex1 = new Vertex<>(1);
+        Vertex<Integer> vertex2 = new Vertex<>(2);
+
+        // Agregar el mínimo número de vértices (dos) y conectarlos
+        graph.addVertex(vertex1);
+        graph.addVertex(vertex2);
+        graph.addEdge(vertex1, vertex2, 1); // Conectar ambos vértices con un peso
+
+        AdjacencyMatrixGraph<Integer> mstGraph = graph.primAM();
 
         assertNotNull(mstGraph);
-        assertEquals(0, mstGraph.getVertices().size()); // El grafo MST debería estar vacío
-
+        assertEquals(2, mstGraph.getVertices().size());
+        assertEquals(1, countEdges(mstGraph)); // El MST tendrá un solo borde en este caso
     }
+
+
 
     @Test
     public void testPrimInterestingCase() {

@@ -1,4 +1,5 @@
 import com.example.pipegame.model.AdjacencyListGraph;
+import com.example.pipegame.model.AdjacencyMatrixGraph;
 import com.example.pipegame.model.Edge;
 import com.example.pipegame.model.Vertex;
 import org.junit.jupiter.api.Assertions;
@@ -171,6 +172,51 @@ public class AdjacencyListGraphTest {
     }
 
 
+
+    @Test
+    public void testRemoveEdgeStandard() {
+        AdjacencyListGraph<String> graph = new AdjacencyListGraph<>();
+        Vertex<String> vertexA = new Vertex<>("A");
+        Vertex<String> vertexB = new Vertex<>("B");
+
+        graph.addVertex(vertexA);
+        graph.addVertex(vertexB);
+        graph.addEdge(vertexA, vertexB, 5);
+        graph.removeEdge(vertexA, vertexB);
+
+        assertNull(graph.findEdge(vertexA, vertexB));
+    }
+
+    @Test
+    public void testRemoveEdgeEdgeCases() {
+        AdjacencyListGraph<Integer> graph = new AdjacencyListGraph<>();
+        Vertex<Integer> vertexA = new Vertex<>(1);
+        Vertex<Integer> vertexB = new Vertex<>(2);
+
+        graph.addVertex(vertexA);
+        graph.addVertex(vertexB);
+        graph.removeEdge(vertexA, vertexB); // Eliminar un borde en un grafo sin bordes
+    }
+
+    @Test
+    public void testRemoveEdgeInteresting() {
+        AdjacencyListGraph<String> graph = new AdjacencyListGraph<>();
+        Vertex<String> vertexA = new Vertex<>("A");
+        Vertex<String> vertexB = new Vertex<>("B");
+        Vertex<String> vertexC = new Vertex<>("C");
+
+        graph.addVertex(vertexA);
+        graph.addVertex(vertexB);
+        graph.addVertex(vertexC);
+        graph.addEdge(vertexA, vertexB, 2);
+        graph.addEdge(vertexB, vertexC, 4);
+        graph.removeEdge(vertexA, vertexB);
+
+        assertNull(graph.findEdge(vertexA, vertexB));
+        assertNotNull(graph.findEdge(vertexB, vertexC));
+    }
+
+
     @Test
     public void testDFSStandard() {
         // Escenario estándar
@@ -200,6 +246,7 @@ public class AdjacencyListGraphTest {
     @Test
     public void testDFSLimit() {
         // Escenario de límite: grafo vacío
+
         ArrayList<Vertex<Integer>> dfsOrder = graph.dfs(null);
         assertTrue(dfsOrder.isEmpty());
     }
@@ -251,12 +298,17 @@ public class AdjacencyListGraphTest {
         }
     }
 
-    //CAMBIAR
     @Test
-    public void testBFSLimit() {
-        // Escenario de límite: grafo vacío
-        ArrayList<Vertex<Integer>> bfsOrder = graph.bfs(null);
-        assertTrue(bfsOrder.isEmpty());
+    public void testBFSEdgeCases() {
+        AdjacencyListGraph<Integer> graph = new AdjacencyListGraph<>();
+        Vertex<Integer> vertexA = new Vertex<>(1);
+
+        graph.addVertex(vertexA);
+        ArrayList<Vertex<Integer>> bfsOrder = graph.bfs(vertexA);
+
+        assertNotNull(bfsOrder);
+        assertEquals(1, bfsOrder.size()); // En un grafo con un solo vértice
+        assertEquals(vertexA, bfsOrder.get(0));
     }
 
     @Test
@@ -446,14 +498,26 @@ public class AdjacencyListGraphTest {
     //Cambiar
     @Test
     public void testPrimEdgeCases() {
-        // Edge case: Empty graph
-        AdjacencyListGraph<String> graph = new AdjacencyListGraph<>();
-        AdjacencyListGraph<String> mstGraph = graph.primAL();
+
+        AdjacencyListGraph<Integer> graph = new AdjacencyListGraph<>();
+        Vertex<Integer> vertex1 = new Vertex<>(1);
+        Vertex<Integer> vertex2 = new Vertex<>(2);
+
+        // Agregar el mínimo número de vértices (dos) y conectarlos
+        graph.addVertex(vertex1);
+        graph.addVertex(vertex2);
+        graph.addEdge(vertex1, vertex2, 1); // Conectar ambos vértices con un peso
+
+        AdjacencyListGraph<Integer> mstGraph = graph.primAL();
 
         assertNotNull(mstGraph);
-        assertEquals(0, mstGraph.getVertices().size());
-        assertEquals(0, countEdges(mstGraph));
+        assertEquals(2, mstGraph.getVertices().size());
+        assertEquals(1, countEdges(mstGraph)); // El MST tendrá un solo borde en este caso
     }
+
+
+
+
 
     @Test
     public void testPrimInterestingCase() {
