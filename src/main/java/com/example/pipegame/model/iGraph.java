@@ -12,9 +12,9 @@ public interface iGraph<T> {
     ArrayList<Vertex<T>> bfs(Vertex<T> startVertex);
     ArrayList<Vertex<T>> dijkstra(Vertex<T>  startVertex, Vertex<T> endVertex);
     int[][] floydWarshall();
-    AdjacencyListGraph<T> primAL(Vertex<T> startVertex);
+    AdjacencyListGraph<T> primAL();
     AdjacencyListGraph<T> kruskalAL();
-    AdjacencyMatrixGraph<T> primAM(Vertex<T> startVertex);
+    AdjacencyMatrixGraph<T> primAM();
     AdjacencyMatrixGraph<T> kruskalAM();
     void removeAllEdges();
     ArrayList<Vertex<T>> getVertices();

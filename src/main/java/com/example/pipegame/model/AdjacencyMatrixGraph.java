@@ -88,7 +88,16 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
         adjacencyMatrix[destinationIndex][sourceIndex] = 0;
     }
 
+    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
+        int sourceIndex = vertices.indexOf(source);
+        int destinationIndex = vertices.indexOf(destination);
 
+        if (sourceIndex != -1 && destinationIndex != -1 && adjacencyMatrix[sourceIndex][destinationIndex] != 0) {
+            int weight = adjacencyMatrix[sourceIndex][destinationIndex];
+            return new Edge<>(source, destination, weight);
+        }
+        return null;
+    }
 
     @Override
     public ArrayList<Vertex<T>> dfs(Vertex<T> source) {
@@ -247,7 +256,7 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public AdjacencyListGraph<T> primAL(Vertex<T> startVertex) {
+    public AdjacencyListGraph<T> primAL() {
         return null;
     }
 
@@ -257,46 +266,45 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public AdjacencyMatrixGraph<T> primAM(Vertex<T> startVertex) {
+    public AdjacencyMatrixGraph<T> primAM() {
         AdjacencyMatrixGraph<T> mstGraph = new AdjacencyMatrixGraph<>();
+        Set<Vertex<T>> processedVertices = new HashSet<>();
+        PriorityQueue<Edge<T>> minHeap = new PriorityQueue<>(Comparator.comparingInt(Edge::getWeight));
 
-        // initialize distance, color, and pred arrays
-        for (Vertex<T> u : vertices) {
-            u.setDistance(Integer.MAX_VALUE);
-            u.setColor(Color.WHITE);
-            u.setPredecessor(null);
-            mstGraph.addVertex(new Vertex<>(u.getData()));
-        }
+        // choose a starting vertex (arbitrarily in this case)
+        Vertex<T> startVertex = vertices.iterator().next();
+        processedVertices.add(startVertex);
 
-        // start with the given start vertex
-        startVertex.setDistance(0);
+        // add edges of the starting vertex to the priority queue
+        minHeap.addAll(getEdges(startVertex));
 
-        PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(vertices.size(), Comparator.comparingInt(Vertex::getDistance));
-        priorityQueue.addAll(vertices);
+        while (!minHeap.isEmpty() && processedVertices.size() < vertices.size()) {
+            Edge<T> minEdge = minHeap.poll();
+            Vertex<T> destinationVertex = minEdge.getDestination();
 
-        while (!priorityQueue.isEmpty()) {
-            Vertex<T> u = priorityQueue.poll();
-            u.setColor(Color.BLACK);
+            if (!processedVertices.contains(destinationVertex)) {
+                processedVertices.add(destinationVertex);
 
-            for (Vertex<T> v : vertices) {
-                int weight = adjacencyMatrix[vertices.indexOf(u)][vertices.indexOf(v)];
-
-                if (v.getColor() == Color.WHITE && weight > 0 && weight < v.getDistance()) {
-                    v.setDistance(weight);
-                    priorityQueue.remove(v); // remove and re-add to update the priority queue
-                    priorityQueue.add(v);
-                    v.setPredecessor(u);
-
-                    Vertex<T> uInMST = mstGraph.findVertex(u.getData());
-                    Vertex<T> vInMST = mstGraph.findVertex(v.getData());
-
-                    if (uInMST != null && vInMST != null) {
-                        mstGraph.addEdge(uInMST, vInMST, weight);
-                    }
+                // add vertices to the MST
+                Vertex<T> sourceVertexInMST = mstGraph.findVertex(minEdge.getSource().getData());
+                if (sourceVertexInMST == null) {
+                    sourceVertexInMST = new Vertex<>(minEdge.getSource().getData());
+                    mstGraph.addVertex(sourceVertexInMST);
                 }
+
+                Vertex<T> destinationVertexInMST = mstGraph.findVertex(destinationVertex.getData());
+                if (destinationVertexInMST == null) {
+                    destinationVertexInMST = new Vertex<>(destinationVertex.getData());
+                    mstGraph.addVertex(destinationVertexInMST);
+                }
+
+                // Add the edge to the MST
+                mstGraph.addEdge(sourceVertexInMST, destinationVertexInMST, minEdge.getWeight());
+
+                // Add edges of the newly visited vertex to the priority queue
+                minHeap.addAll(getEdges(destinationVertex));
             }
         }
-
         return mstGraph;
     }
 
@@ -316,13 +324,21 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
             Vertex<T> sourceVertex = edge.getSource();
             Vertex<T> destinationVertex = edge.getDestination();
 
-            if (!disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
+            Vertex<T> sourceVertexInMST = minimumSpanningTree.findVertex(sourceVertex.getData());
+            Vertex<T> destinationVertexInMST = minimumSpanningTree.findVertex(destinationVertex.getData());
+
+            if (sourceVertexInMST != null && destinationVertexInMST != null &&
+                    !disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
                 disjointSet.union(sourceVertex.getData(), destinationVertex.getData());
-                minimumSpanningTree.addEdge(new Vertex<>(sourceVertex.getData()), new Vertex<>(destinationVertex.getData()), edge.getWeight());
+                minimumSpanningTree.addEdge(sourceVertexInMST, destinationVertexInMST, edge.getWeight());
             }
         }
 
         return minimumSpanningTree;
+    }
+
+    public int[][] getAdjacencyMatrix() {
+        return adjacencyMatrix;
     }
 
     @Override
@@ -360,15 +376,18 @@ public class AdjacencyMatrixGraph<T> implements iGraph<T> {
         return allEdges;
     }
 
-    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
-        int sourceIndex = vertices.indexOf(source);
-        int destinationIndex = vertices.indexOf(destination);
+    private ArrayList<Edge<T>> getEdges(Vertex<T> vertex) {
+        ArrayList<Edge<T>> edges = new ArrayList<>();
+        int vertexIndex = vertices.indexOf(vertex);
 
-        if (sourceIndex != -1 && destinationIndex != -1 && adjacencyMatrix[sourceIndex][destinationIndex] != 0) {
-            int weight = adjacencyMatrix[sourceIndex][destinationIndex];
-            return new Edge<>(source, destination, weight);
+        for (int i = 0; i < adjacencyMatrix[vertexIndex].length; i++) {
+            if (adjacencyMatrix[vertexIndex][i] > 0) {
+                Vertex<T> adjacentVertex = vertices.get(i);
+                edges.add(new Edge<>(vertex, adjacentVertex, adjacencyMatrix[vertexIndex][i]));
+            }
         }
-        return null;
+
+        return edges;
     }
 
     private static class DisjointSet<T> {

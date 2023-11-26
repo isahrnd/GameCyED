@@ -7,8 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,9 +58,6 @@ public class AdjacencyMatrixGraphTest {
         assertNotNull(graph.findVertex("C"));
     }
 
-
-
-
     @Test
     public void testFindVertexStandard() {
         AdjacencyMatrixGraph<String> graph = new AdjacencyMatrixGraph<>();
@@ -99,8 +94,6 @@ public class AdjacencyMatrixGraphTest {
         assertEquals(vertexA, graph.findVertex('A'));
         assertNotEquals(vertexB, graph.findVertex('A'));
     }
-
-
 
     @Test
     public void testRemoveVertexStandard() {
@@ -140,9 +133,6 @@ public class AdjacencyMatrixGraphTest {
         assertNotNull(graph.findVertex("C"));
     }
 
-
-
-
     @Test
     public void testAddEdgeStandard() {
         AdjacencyMatrixGraph<String> graph = new AdjacencyMatrixGraph<>();
@@ -173,7 +163,6 @@ public class AdjacencyMatrixGraphTest {
         assertEquals(0, edge.getWeight());
     }
 
-
     @Test
     public void testAddEdgeInteresting() {
         AdjacencyMatrixGraph<Character> graph = new AdjacencyMatrixGraph<>();
@@ -195,9 +184,6 @@ public class AdjacencyMatrixGraphTest {
         assertEquals(2, edge1.getWeight());
         assertEquals(4, edge2.getWeight());
     }
-
-
-
 
     @Test
     public void testRemoveEdgeStandard() {
@@ -298,9 +284,6 @@ public class AdjacencyMatrixGraphTest {
         assertNotNull(dfsOrder);
         assertEquals(4, dfsOrder.size());
     }
-
-
-
 
     @Test
     public void testBFSStandard() {
@@ -513,17 +496,31 @@ public class AdjacencyMatrixGraphTest {
         graph.addEdge(vertexA, vertexC, 8);
         graph.addEdge(vertexB, vertexC, 1);
 
-        AdjacencyMatrixGraph<Integer> mstGraph = graph.primAM(vertexA);
+        AdjacencyMatrixGraph<Integer> mstGraph = graph.primAM();
 
         assertNotNull(mstGraph);
-        assertEquals(3, mstGraph.getVertices().size()); // El grafo MST debería tener los mismos vértices
-
+        assertEquals(3, mstGraph.getVertices().size());
+        assertEquals(2, countEdges(mstGraph));
     }
 
+    private <T> int countEdges(AdjacencyMatrixGraph<T> graph) {
+        int edgeCount = 0;
+        for (int i = 0; i < graph.getVertices().size(); i++) {
+            for (int j = i + 1; j < graph.getVertices().size(); j++) {
+                if (graph.getAdjacencyMatrix()[i][j] != 0) {
+                    // Edge exists between vertices i and j
+                    edgeCount++;
+                }
+            }
+        }
+        return edgeCount;
+    }
+
+    //CAMBIAR
     @Test
     public void testPrimEdgeCases() {
         AdjacencyMatrixGraph<String> graph = new AdjacencyMatrixGraph<>();
-        AdjacencyMatrixGraph<String> mstGraph = graph.primAM(new Vertex<>("A"));
+        AdjacencyMatrixGraph<String> mstGraph = graph.primAM();
 
         assertNotNull(mstGraph);
         assertEquals(0, mstGraph.getVertices().size()); // El grafo MST debería estar vacío
@@ -548,11 +545,10 @@ public class AdjacencyMatrixGraphTest {
         graph.addEdge(vertexB, vertexD, 2);
         graph.addEdge(vertexC, vertexD, 1);
 
-        AdjacencyMatrixGraph<Character> mstGraph = graph.primAM(vertexA);
+        AdjacencyMatrixGraph<Character> mstGraph = graph.primAM();
 
         assertNotNull(mstGraph);
         assertEquals(4, mstGraph.getVertices().size()); // MST debería tener 4 nodos
-
     }
 
 
@@ -611,12 +607,6 @@ public class AdjacencyMatrixGraphTest {
 
         assertNotNull(mstGraph);
         assertEquals(4, mstGraph.getVertices().size()); // MST debería tener 4 nodos
-
+        assertEquals(3, countEdges(mstGraph));
     }
-
-
-
-
-
-
 }

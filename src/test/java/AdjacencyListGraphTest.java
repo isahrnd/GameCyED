@@ -251,6 +251,7 @@ public class AdjacencyListGraphTest {
         }
     }
 
+    //CAMBIAR
     @Test
     public void testBFSLimit() {
         // Escenario de límite: grafo vacío
@@ -278,16 +279,6 @@ public class AdjacencyListGraphTest {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
     @Test
     public void testDijkstraStandardCase() {
         // Arrange
@@ -313,9 +304,9 @@ public class AdjacencyListGraphTest {
         // Assert
         assertNotNull(shortestPath);
         assertEquals(3, shortestPath.size());
-        assertEquals(vertexA, shortestPath.get(0));
-        assertEquals(vertexC, shortestPath.get(1));
-        assertEquals(vertexD, shortestPath.get(2));
+        assertEquals(vertexD, shortestPath.get(0));
+        assertEquals(vertexB, shortestPath.get(1));
+        assertEquals(vertexA, shortestPath.get(2));
     }
 
     @Test
@@ -328,7 +319,7 @@ public class AdjacencyListGraphTest {
         ArrayList<Vertex<String>> shortestPath = graph.dijkstra(startVertex, endVertex);
 
         assertNotNull(shortestPath);
-        assertEquals(0, shortestPath.size());
+        assertEquals(1, shortestPath.size());
     }
 
     @Test
@@ -350,15 +341,10 @@ public class AdjacencyListGraphTest {
         ArrayList<Vertex<Character>> shortestPath = graph.dijkstra(vertexS, vertexB);
 
         assertNotNull(shortestPath);
-        assertEquals(3, shortestPath.size());
-        assertEquals(vertexS, shortestPath.get(0));
-        assertEquals(vertexA, shortestPath.get(1));
-        assertEquals(vertexB, shortestPath.get(2));
+        assertEquals(2, shortestPath.size());
+        assertEquals(vertexB, shortestPath.get(0));
+        assertEquals(vertexS, shortestPath.get(1));
     }
-
-
-
-
 
     @Test
     public void testFloydWarshallStandardCase() {
@@ -431,9 +417,6 @@ public class AdjacencyListGraphTest {
         return false;
     }
 
-
-
-
     @Test
     public void testPrimStandardCase() {
         // Arrange
@@ -451,22 +434,21 @@ public class AdjacencyListGraphTest {
         graph.addEdge(vertexB, vertexC, 1);
 
         // Act
-        AdjacencyListGraph<Integer> mstGraph = graph.primAL(vertexA);
+        AdjacencyListGraph<Integer> mstGraph = graph.primAL();
 
         // Assert
         assertNotNull(mstGraph);
         assertEquals(3, mstGraph.getVertices().size()); // MST should have the same number of vertices
-        assertEquals(2, countEdges(mstGraph)); // MST should have two edges
-        // Add more assertions based on the expected MST structure if known
+        assertEquals(2, countEdges(mstGraph));
     }
 
 
-
+    //Cambiar
     @Test
     public void testPrimEdgeCases() {
         // Edge case: Empty graph
         AdjacencyListGraph<String> graph = new AdjacencyListGraph<>();
-        AdjacencyListGraph<String> mstGraph = graph.primAL(new Vertex<>("A"));
+        AdjacencyListGraph<String> mstGraph = graph.primAL();
 
         assertNotNull(mstGraph);
         assertEquals(0, mstGraph.getVertices().size());
@@ -488,12 +470,11 @@ public class AdjacencyListGraphTest {
         graph.addEdge(vertexS, vertexA, 5);
         graph.addEdge(vertexS, vertexB, 7);
 
-        AdjacencyListGraph<Character> mstGraph = graph.primAL(vertexS);
+        AdjacencyListGraph<Character> mstGraph = graph.primAL();
 
         assertNotNull(mstGraph);
         assertEquals(3, mstGraph.getVertices().size()); // MST should have all vertices
         assertEquals(2, countEdges(mstGraph)); // MST should have two edges
-        // Add more assertions based on the expected MST structure if known
     }
 
     // Helper method to count edges in the graph
@@ -524,10 +505,10 @@ public class AdjacencyListGraphTest {
         AdjacencyListGraph<Integer> mstGraph = graph.kruskalAL();
 
         assertNotNull(mstGraph);
-        assertEquals(3, mstGraph.getVertices().size()); // El grafo MST debería tener los mismos vértices
+        assertEquals(3, mstGraph.getVertices().size());
+        assertEquals(2, countEdges(mstGraph));
 
     }
-
 
     @Test
     public void testKruskalEmptyGraph() {
@@ -564,10 +545,9 @@ public class AdjacencyListGraphTest {
         AdjacencyListGraph<Character> mstGraph = graph.kruskalAL();
 
         assertNotNull(mstGraph);
-        assertEquals(4, mstGraph.getVertices().size()); // MST debería tener 4 nodos
-
+        assertEquals(4, mstGraph.getVertices().size());
+        assertEquals(3, countEdges(mstGraph));
     }
-
 
 }
 

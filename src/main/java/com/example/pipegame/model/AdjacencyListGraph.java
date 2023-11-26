@@ -66,6 +66,15 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         }
     }
 
+    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
+        for (Edge<T> edge : edges) {
+            if (edge.getSource().equals(source) && edge.getDestination().equals(destination)) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
     @Override
     public ArrayList<Vertex<T>> dfs(Vertex<T> source) {
         ArrayList<Vertex<T>> dfsOrder = new ArrayList<>();
@@ -204,42 +213,44 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public AdjacencyListGraph<T> primAL(Vertex<T> startVertex) {
+    public AdjacencyListGraph<T> primAL() {
+
         AdjacencyListGraph<T> mstGraph = new AdjacencyListGraph<>();
+        Set<Vertex<T>> processedVertices = new HashSet<>();
+        PriorityQueue<Edge<T>> minHeap = new PriorityQueue<>(Comparator.comparingInt(Edge::getWeight));
 
-        // Initialize key, color, and pred arrays
-        for (Vertex<T> u : vertices) {
-            u.setDistance(Integer.MAX_VALUE);
-            u.setColor(Color.WHITE);
-            u.setPredecessor(null);
-            mstGraph.addVertex(new Vertex<>(u.getData()));
-        }
+        // choose a starting vertex (arbitrarily in this case)
+        Vertex<T> startVertex = vertices.iterator().next();
+        processedVertices.add(startVertex);
 
-        // Start with the given start vertex
-        startVertex.setDistance(0);
+        // add edges of the starting vertex to the priority queue
+        minHeap.addAll(getEdges(startVertex));
 
-        PriorityQueue<Vertex<T>> priorityQueue = new PriorityQueue<>(vertices.size(), Comparator.comparingInt(Vertex::getDistance));
-        priorityQueue.addAll(vertices);
+        while (!minHeap.isEmpty() && processedVertices.size() < vertices.size()) {
+            Edge<T> minEdge = minHeap.poll();
+            Vertex<T> destinationVertex = minEdge.getDestination();
 
-        while (!priorityQueue.isEmpty()) {
-            Vertex<T> u = priorityQueue.poll();
-            u.setColor(Color.BLACK);
+            if (!processedVertices.contains(destinationVertex)) {
+                processedVertices.add(destinationVertex);
 
-            for (Vertex<T> v : u.getNeighbors()) {
-                int weight = findEdge(u,v) != null ? Objects.requireNonNull(findEdge(u, v)).getWeight() : Integer.MAX_VALUE;
-                if (v.getColor() == Color.WHITE && weight < v.getDistance()) {
-                    v.setDistance(weight);
-                    priorityQueue.remove(v); // Remove and re-add to update the priority queue
-                    priorityQueue.add(v);
-                    v.setPredecessor(u);
-
-                    Vertex<T> uInMST = mstGraph.findVertex(u.getData());
-                    Vertex<T> vInMST = mstGraph.findVertex(v.getData());
-
-                    if (uInMST != null && vInMST != null) {
-                        mstGraph.addEdge(uInMST, vInMST, weight);
-                    }
+                // add vertices to the MST
+                Vertex<T> sourceVertexInMST = mstGraph.findVertex(minEdge.getSource().getData());
+                if (sourceVertexInMST == null) {
+                    sourceVertexInMST = new Vertex<>(minEdge.getSource().getData());
+                    mstGraph.addVertex(sourceVertexInMST);
                 }
+
+                Vertex<T> destinationVertexInMST = mstGraph.findVertex(destinationVertex.getData());
+                if (destinationVertexInMST == null) {
+                    destinationVertexInMST = new Vertex<>(destinationVertex.getData());
+                    mstGraph.addVertex(destinationVertexInMST);
+                }
+
+                // Add the edge to the MST
+                mstGraph.addEdge(sourceVertexInMST, destinationVertexInMST, minEdge.getWeight());
+
+                // Add edges of the newly visited vertex to the priority queue
+                minHeap.addAll(getEdges(destinationVertex));
             }
         }
 
@@ -254,16 +265,20 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         DisjointSet<T> disjointSet = new DisjointSet<>(vertices);
 
         for (Vertex<T> vertex : vertices) {
-            minimumSpanningTree.addVertex(new Vertex<>(vertex.getData()));
+            minimumSpanningTree.addVertex(new Vertex<>(vertex.getData())); // Use new instances for the MST
         }
 
         for (Edge<T> edge : edges) {
             Vertex<T> sourceVertex = edge.getSource();
             Vertex<T> destinationVertex = edge.getDestination();
 
-            if (!disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
+            Vertex<T> sourceVertexInMST = minimumSpanningTree.findVertex(sourceVertex.getData());
+            Vertex<T> destinationVertexInMST = minimumSpanningTree.findVertex(destinationVertex.getData());
+
+            if (sourceVertexInMST != null && destinationVertexInMST != null &&
+                    !disjointSet.find(sourceVertex.getData()).equals(disjointSet.find(destinationVertex.getData()))) {
                 disjointSet.union(sourceVertex.getData(), destinationVertex.getData());
-                minimumSpanningTree.addEdge(new Vertex<>(sourceVertex.getData()), new Vertex<>(destinationVertex.getData()), edge.getWeight());
+                minimumSpanningTree.addEdge(sourceVertexInMST, destinationVertexInMST, edge.getWeight());
             }
         }
 
@@ -271,7 +286,7 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
     }
 
     @Override
-    public AdjacencyMatrixGraph<T> primAM(Vertex<T> startVertex) {
+    public AdjacencyMatrixGraph<T> primAM() {
         return null;
     }
 
@@ -285,7 +300,6 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         return vertices;
     }
 
-    //auxiliars
     public void removeAllEdges() {
         for (Vertex<T> vertex : vertices) {
             removeAllEdgesFromVertex(vertex);
@@ -297,15 +311,6 @@ public class AdjacencyListGraph<T> implements iGraph<T> {
         for (Vertex<T> neighbor : neighbors) {
             removeEdge(vertex, neighbor);
         }
-    }
-
-    public Edge<T> findEdge(Vertex<T> source, Vertex<T> destination) {
-        for (Edge<T> edge : edges) {
-            if (edge.getSource().equals(source) && edge.getDestination().equals(destination)) {
-                return edge;
-            }
-        }
-        return null;
     }
 
     public ArrayList<Edge<T>> getEdges(Vertex<T> vertex) {
