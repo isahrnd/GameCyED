@@ -285,7 +285,11 @@ public class Game implements Initializable {
             String msg = "Number of pipes used: " + pipesOnScreen.size();
             msg += "\nTime: " + seconds + " sec.";
 
-            int myPathSize = path().size();
+            ArrayList<Vertex<Pipe>> myPath = path();
+            int myPathSize = myPath.size();
+            deleteCurrentPipes();
+            buildGraphWithoutPipes();
+            highlightPath(myPath, Color.AQUA);
             int shortestPathSize = shortestPath().size();
             if (myPathSize == shortestPathSize){
                 msg += "\nYou found one of the fastest ways! +1000 pts";
@@ -413,7 +417,7 @@ public class Game implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             deleteCurrentPipes();
             buildGraphWithoutPipes();
-            highlightPath(shortestPath());
+            highlightPath(shortestPath(), Color.YELLOW);
             validateButton.setDisable(true);
             resetButton.setDisable(true);
             giveUpButton.setDisable(true);
@@ -436,12 +440,12 @@ public class Game implements Initializable {
         }
     }
 
-    private void highlightPath(ArrayList<Vertex<Pipe>> path) {
+    private void highlightPath(ArrayList<Vertex<Pipe>> path, Color color) {
         for (Vertex<Pipe> vertex : path) {
             int columnIndex = vertex.getData().getCol();
             int rowIndex = vertex.getData().getRow();
             Rectangle rectangle = new Rectangle(board.getWidth() / board.getColumnCount(), board.getHeight() / board.getRowCount());
-            rectangle.setFill(Color.YELLOW);
+            rectangle.setFill(color);
             board.add(rectangle, columnIndex, rowIndex);
         }
     }
